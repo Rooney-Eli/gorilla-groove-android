@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/mainFragment"
+        android:title="My Library"
+        android:icon="@drawable/ic_my_library_24" />
+
+    <item android:id="@+id/playingFragment"
+        android:title="Now Playing"
+        android:icon="@drawable/ic_now_playing_24" />
+
+
+    <item android:id="@+id/usersFragment"
+        android:title="Users"
+        android:icon="@drawable/ic_users_24" />
+
+    <item android:id="@+id/playlistsFragment"
+        android:title="Playlists"
+        android:icon="@drawable/ic_playlists_24" />
+
+    <item android:id="@+id/settingsFragment"
+        android:title="Settings"
+        android:icon="@drawable/ic_settings_24" />
+
+</menu>
