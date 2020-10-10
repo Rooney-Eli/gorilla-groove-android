@@ -44,6 +44,7 @@ import com.google.android.exoplayer2.util.Util
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_main.*
+import kotlinx.android.synthetic.main.playlist_track_info_item.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import javax.inject.Inject
 
@@ -61,8 +62,6 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-
-
 
         Log.d(TAG, "onViewCreated: Retrieving tracks for recycler view from viewmodel...")
         viewModel.setStateEvent(MainStateEvent.GetAllTracksEvents)
@@ -131,28 +130,28 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_AZ)
                     .apply()
-                viewModel.setStateEvent(MainStateEvent.GetAllTracksEvents)
+                playlistAdapter.sortList(Sort.A_TO_Z)
                 true
             }
             R.id.action_sort_id -> {
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_ID)
                     .apply()
-                viewModel.setStateEvent(MainStateEvent.GetAllTracksEvents)
+                playlistAdapter.sortList(Sort.ID)
                 true
             }
             R.id.action_sort_date_added_oldest -> {
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_DATE_ADDED_OLDEST)
                     .apply()
-                viewModel.setStateEvent(MainStateEvent.GetAllTracksEvents)
+                playlistAdapter.sortList(Sort.OLDEST)
                 true
             }
             R.id.action_sort_date_added_newest -> {
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_DATE_ADDED_NEWEST)
                     .apply()
-                viewModel.setStateEvent(MainStateEvent.GetAllTracksEvents)
+                playlistAdapter.sortList(Sort.NEWEST)
                 true
             }
 
@@ -183,12 +182,4 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         )
     }
 
-    private fun writePersonalDataToSharedPref() {
-
-        sharedPref.edit()
-            .putString(KEY_SORT, SORT_BY_AZ)
-            .apply()
-
     }
-
-}

@@ -125,8 +125,6 @@ constructor(
         _currentTrackItem.postValue(it)
     }
 
-
-
     private val musicServiceConnection = musicServiceConnection.also {
 
         it.playbackState.observeForever(playbackStateObserver)

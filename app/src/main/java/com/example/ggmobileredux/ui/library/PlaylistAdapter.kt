@@ -1,11 +1,12 @@
 package com.example.ggmobileredux.ui.library
 
+import android.util.Log
+import android.util.SparseBooleanArray
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Filter
-import android.widget.Filterable
-import android.widget.TextView
+import android.widget.*
+import androidx.core.util.contains
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
@@ -15,13 +16,11 @@ import kotlinx.android.synthetic.main.playlist_track_name_item.view.track_name
 import java.util.*
 
 class PlaylistAdapter(
-    //private val trackList: List<Track>,
     private val listener: OnTrackListener
 ) : RecyclerView.Adapter<PlaylistAdapter.PlaylistViewHolder>(), Filterable{
 
     var trackList = listOf<Track>()
     val filteredList: MutableList<Track> = trackList.toMutableList()
-
 
     fun submitList(tracks: List<Track>) {
         trackList = tracks
@@ -29,6 +28,15 @@ class PlaylistAdapter(
         filteredList.addAll(trackList)
     }
 
+    fun sortList(sort: Sort) {
+        when(sort) {
+            Sort.ID -> filteredList.sortBy { it.id }
+            Sort.A_TO_Z -> filteredList.sortBy { it.name }
+            Sort.OLDEST -> filteredList.sortBy { it.addedToLibrary }
+            Sort.NEWEST -> filteredList.sortByDescending { it.addedToLibrary }
+        }
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(
@@ -45,8 +53,7 @@ class PlaylistAdapter(
         holder.tvDuration.text = currentTrack.length.getSongTimeFromSeconds()
         holder.tvName.text = currentTrack.name
         holder.tvAlbum.text = currentTrack.album
-
-    }
+        }
 
 
     private fun Long.getSongTimeFromSeconds(): String {
@@ -67,18 +74,11 @@ class PlaylistAdapter(
 
         override fun onClick(v: View?) {
             val position = adapterPosition
-
             //in event of animation
             if(position != RecyclerView.NO_POSITION) {
                 listener.onTrackClick(position)
             }
-
         }
-
-    }
-
-    interface OnTrackListener {
-        fun onTrackClick(position: Int)
     }
 
     override fun getFilter(): Filter {
@@ -106,6 +106,10 @@ class PlaylistAdapter(
                 notifyDataSetChanged()
             }
         }
+    }
 
+    interface OnTrackListener {
+        fun onTrackClick(position: Int)
     }
 }
+enum class Sort {ID, A_TO_Z, NEWEST, OLDEST}
