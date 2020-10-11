@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
+
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
@@ -98,7 +99,6 @@ class MainActivity : AppCompatActivity() {
         audio_seek_bar.setOnSeekBarChangeListener(
           object : SeekBar.OnSeekBarChangeListener {
               override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                  Log.d(TAG, "onProgressChanged: ")
               }
 
               override fun onStartTrackingTouch(seekBar: SeekBar?) {
@@ -112,26 +112,6 @@ class MainActivity : AppCompatActivity() {
           }
         )
     }
-
-//    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-//        val inflater: MenuInflater = menuInflater
-//        inflater.inflate(R.menu.app_bar_menu, menu)
-//        return true
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        return when (item.itemId) {
-//            R.id.action_sort -> {
-//                Toast.makeText(this, "Activity Sort!", Toast.LENGTH_SHORT).show()
-//                true
-//            }
-//            R.id.action_settings -> {
-//                Toast.makeText(this, "Activity Settings?", Toast.LENGTH_SHORT).show()
-//                true
-//            }
-//            else -> super.onOptionsItemSelected(item)
-//        }
-//    }
 
     private fun initProgressBar() {
         audio_seek_bar.min = 0

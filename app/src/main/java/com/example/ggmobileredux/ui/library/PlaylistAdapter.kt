@@ -62,7 +62,7 @@ class PlaylistAdapter(
         return "$minutes:${String.format("%02d", seconds)}"
     }
 
-    inner class PlaylistViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
+    inner class PlaylistViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
         val tvArtist: TextView = itemView.track_artist
         val tvDuration: TextView = itemView.track_duration
         val tvName: TextView = itemView.track_name
@@ -70,6 +70,7 @@ class PlaylistAdapter(
 
         init {
             itemView.setOnClickListener(this)
+            itemView.setOnLongClickListener(this)
         }
 
         override fun onClick(v: View?) {
@@ -78,6 +79,14 @@ class PlaylistAdapter(
             if(position != RecyclerView.NO_POSITION) {
                 listener.onTrackClick(position)
             }
+        }
+
+        override fun onLongClick(v: View?): Boolean {
+            val position = adapterPosition
+            if(position != RecyclerView.NO_POSITION) {
+                listener.onTrackLongClick(position)
+            }
+            return true
         }
     }
 
@@ -110,6 +119,7 @@ class PlaylistAdapter(
 
     interface OnTrackListener {
         fun onTrackClick(position: Int)
+        fun onTrackLongClick(position: Int) : Boolean
     }
 }
 enum class Sort {ID, A_TO_Z, NEWEST, OLDEST}

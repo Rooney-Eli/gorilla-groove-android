@@ -1,50 +1,26 @@
 package com.example.ggmobileredux.ui.library
 
-import android.content.ComponentName
-import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
 import android.os.Bundle
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
-import androidx.core.view.MenuItemCompat
-import androidx.core.view.MenuItemCompat.getActionView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
-import com.example.ggmobileredux.retrofit.TrackLinkResponse
-import com.example.ggmobileredux.service.MusicService
-import com.example.ggmobileredux.ui.CoolAdapter
-import com.example.ggmobileredux.util.Constants
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
 import com.example.ggmobileredux.util.Constants.SORT_BY_DATE_ADDED_NEWEST
 import com.example.ggmobileredux.util.Constants.SORT_BY_DATE_ADDED_OLDEST
 import com.example.ggmobileredux.util.Constants.SORT_BY_ID
 import com.example.ggmobileredux.util.StateEvent
-import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import com.google.android.exoplayer2.util.Util
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_main.*
-import kotlinx.android.synthetic.main.playlist_track_info_item.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import javax.inject.Inject
 
@@ -54,6 +30,7 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     private val viewModel: MainViewModel by viewModels()
     lateinit var playlistAdapter: PlaylistAdapter
     lateinit var listOfTrack: List<Track>
+    var actionMode : ActionMode? = null
 
     @Inject
     lateinit var sharedPref: SharedPreferences
@@ -182,4 +159,43 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         )
     }
 
+    override fun onTrackLongClick(position: Int): Boolean {
+        Log.d(TAG, "onTrackLongClick: Long clicked $position")
+        return when (actionMode) {
+            null -> {
+                actionMode = activity?.startActionMode(actionModeCallback)!!
+                view?.isSelected = true
+                true
+            }
+            else -> false
+        }
     }
+
+    private val actionModeCallback = object : ActionMode.Callback {
+        override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
+            val inflater: MenuInflater? = mode?.menuInflater
+            mode?.title = "Selecting tracks..."
+            inflater?.inflate(R.menu.context_action_menu, menu)
+            return true
+        }
+
+        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu): Boolean {
+            return false
+        }
+
+        override fun onActionItemClicked(mode: ActionMode?, item: MenuItem): Boolean {
+            return when (item.itemId) {
+                R.id.action_add -> {
+                    Log.d(TAG, "onActionItemClicked: added!")
+                    mode?.finish()
+                    true
+                }
+                else -> false
+            }
+        }
+
+        override fun onDestroyActionMode(mode: ActionMode?) {
+            actionMode = null
+        }
+    }
+}

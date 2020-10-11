@@ -42,7 +42,6 @@ constructor(
 
 
     var userToken: String = sharedPreferences.getString(KEY_USER_TOKEN, "") ?: ""
-    //var sortPref: String = sharedPreferences.getString(KEY_SORT, "") ?: ""
 
     val concatenatingMediaSource = ConcatenatingMediaSource()
 
@@ -70,13 +69,9 @@ constructor(
                 trackDao.getAllTracksSortedDateAddedNewest()
             }
             else -> {
-                Log.d(TAG, "getAllTracks: Sorting Error!!!!?")
                 trackDao.getAllTracks()
             }
         }
-
-        Log.d(TAG, "getAllTracks: Sort by value: ")
-        //localCollection = trackDao.getAllTracks()
 
         if(!localCollection.isNullOrEmpty()) {
             Log.d(TAG, "getAllTracks: returning ${localCollection.size} tracks from local database...")

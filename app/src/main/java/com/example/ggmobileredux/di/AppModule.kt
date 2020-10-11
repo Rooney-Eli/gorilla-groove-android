@@ -9,7 +9,6 @@ import com.bumptech.glide.request.RequestOptions
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.service.MusicService
 import com.example.ggmobileredux.service.MusicServiceConnection
-import com.example.ggmobileredux.service.ServiceConnection
 import com.example.ggmobileredux.util.Constants.KEY_FIRST_TIME_TOGGLE
 import com.example.ggmobileredux.util.Constants.KEY_USER_TOKEN
 import com.example.ggmobileredux.util.Constants.SHARED_PREFERENCES_NAME
@@ -52,11 +51,6 @@ object AppModule {
     fun provideDataSourceFactory(
         @ApplicationContext context: Context
     ) = DefaultDataSourceFactory(context, Util.getUserAgent(context, "Groover App"))
-
-    @Singleton
-    @Provides
-    fun provideServiceConnection(@ApplicationContext context: Context) = ServiceConnection(context)
-
 
     @Singleton
     @Provides

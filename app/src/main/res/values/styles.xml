@@ -15,5 +15,7 @@
     <style name="BottomNavigationView.Active" parent="@style/TextAppearance.AppCompat.Caption">
         <item name="android:textSize">10sp</item>
     </style>
+    
+    <!-- context action bar -->
 
 </resources>
