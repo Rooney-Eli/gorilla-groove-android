@@ -66,6 +66,14 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
                     val track = it.data as Track
                     viewModel.playMediaId(track.id.toString())
                 }
+
+                is StateEvent.TrackListSuccess -> {
+                    displayProgressBar(false)
+                    val tracks = it.data as List<Track>
+                    viewModel.playMediaList(tracks)
+                    Log.d(TAG, "subscribeObservers: ")
+                }
+
                 is StateEvent.Error -> {
                     displayProgressBar(false)
                     Toast.makeText(requireContext(), "Error occurred", Toast.LENGTH_SHORT).show()
@@ -163,19 +171,26 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         Log.d(TAG, "onTrackLongClick: Long clicked $position")
         return when (actionMode) {
             null -> {
+                playlistAdapter.showingCheckBox = true
+                playlistAdapter.notifyDataSetChanged()
                 actionMode = activity?.startActionMode(actionModeCallback)!!
                 view?.isSelected = true
                 true
             }
-            else -> false
+            else -> {
+
+                false
+            }
         }
     }
 
+    @ExperimentalCoroutinesApi
     private val actionModeCallback = object : ActionMode.Callback {
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
             val inflater: MenuInflater? = mode?.menuInflater
             mode?.title = "Selecting tracks..."
             inflater?.inflate(R.menu.context_action_menu, menu)
+
             return true
         }
 
@@ -186,7 +201,11 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem): Boolean {
             return when (item.itemId) {
                 R.id.action_add -> {
-                    Log.d(TAG, "onActionItemClicked: added!")
+
+                    val selectedTracks = playlistAdapter.getSelectedTracks()
+                    viewModel.setStateEvent(MainStateEvent.GetListOfTracksEvent(selectedTracks))
+
+                    
                     mode?.finish()
                     true
                 }
@@ -195,6 +214,9 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         }
 
         override fun onDestroyActionMode(mode: ActionMode?) {
+            playlistAdapter.showingCheckBox = false
+            playlistAdapter.checkedTracks.clear()
+            playlistAdapter.notifyDataSetChanged()
             actionMode = null
         }
     }

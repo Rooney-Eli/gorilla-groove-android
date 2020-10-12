@@ -1,19 +1,20 @@
 package com.example.ggmobileredux.ui.library
 
-import android.util.Log
 import android.util.SparseBooleanArray
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.core.util.contains
+import androidx.core.util.keyIterator
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import kotlinx.android.synthetic.main.playlist_track_info_item.view.*
-import kotlinx.android.synthetic.main.playlist_track_name_item.view.*
 import kotlinx.android.synthetic.main.playlist_track_name_item.view.track_name
 import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.LinkedHashMap
 
 class PlaylistAdapter(
     private val listener: OnTrackListener
@@ -21,6 +22,10 @@ class PlaylistAdapter(
 
     var trackList = listOf<Track>()
     val filteredList: MutableList<Track> = trackList.toMutableList()
+
+    val checkedTracks = LinkedHashMap<Int, Boolean>()
+
+    var showingCheckBox = false
 
     fun submitList(tracks: List<Track>) {
         trackList = tracks
@@ -38,6 +43,18 @@ class PlaylistAdapter(
         notifyDataSetChanged()
     }
 
+    fun getSelectedTracks(): List<Int> {
+        val tracks = mutableListOf<Int>()
+        for (id in checkedTracks.keys)
+        {
+            if(checkedTracks.getValue(id)) {
+                tracks.add(id)
+            }
+
+        }
+        return tracks
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(
             R.layout.playlist_track_info_item, parent, false
@@ -53,7 +70,16 @@ class PlaylistAdapter(
         holder.tvDuration.text = currentTrack.length.getSongTimeFromSeconds()
         holder.tvName.text = currentTrack.name
         holder.tvAlbum.text = currentTrack.album
+
+        holder.checkbox.isVisible = showingCheckBox
+        holder.checkbox.isChecked = checkedTracks[filteredList[position].id] ?: false
+        holder.checkbox.setOnCheckedChangeListener { buttonView, isChecked ->
+            if(buttonView.isShown) {
+                buttonView.isChecked = isChecked
+                checkedTracks.put(filteredList[position].id, isChecked)
+            }
         }
+    }
 
 
     private fun Long.getSongTimeFromSeconds(): String {
@@ -67,6 +93,7 @@ class PlaylistAdapter(
         val tvDuration: TextView = itemView.track_duration
         val tvName: TextView = itemView.track_name
         val tvAlbum: TextView = itemView.track_album
+        val checkbox: CheckBox = itemView.checkbox
 
         init {
             itemView.setOnClickListener(this)

@@ -2,6 +2,7 @@ package com.example.ggmobileredux.ui.login
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.provider.Settings.Secure
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -12,14 +13,18 @@ import androidx.navigation.fragment.findNavController
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.retrofit.LoginRequest
 import com.example.ggmobileredux.retrofit.LoginResponseNetworkEntity
-import com.example.ggmobileredux.ui.library.*
+import com.example.ggmobileredux.ui.library.LoginStateEvent
+import com.example.ggmobileredux.ui.library.MainActivity
+import com.example.ggmobileredux.ui.library.MainViewModel
 import com.example.ggmobileredux.util.Constants.KEY_FIRST_TIME_TOGGLE
 import com.example.ggmobileredux.util.StateEvent
 import com.example.ggmobileredux.util.hideKeyboard
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_login.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.util.*
 import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class LoginFragment : Fragment(R.layout.fragment_login) {
@@ -51,11 +56,19 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         edit_text_email.requestFocus()
 
         button_login.setOnClickListener {
+            val x = fetchDeviceUUID()
             val loginRequest = LoginRequest(edit_text_email.text.toString(), edit_text_password.text.toString())
+
+
             viewModel.setLoginStateEvent(LoginStateEvent.LoginEvent(loginRequest))
 
         }
         subscribeObservers()
+    }
+
+    private fun fetchDeviceUUID(): UUID {
+        val androidId = Secure.getString(context?.getContentResolver(), Secure.ANDROID_ID);
+        return UUID.nameUUIDFromBytes(androidId.toByteArray(charset("utf8")))
     }
 
     private fun subscribeObservers() {

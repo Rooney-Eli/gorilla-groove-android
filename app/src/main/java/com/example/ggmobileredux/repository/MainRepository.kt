@@ -141,6 +141,54 @@ constructor(
         }
     }
 
+    suspend fun getListOfTracksWithLinks(trackIds: List<Int>): Flow<DataState<*>> = flow {
+        emit(DataState(null, StateEvent.Loading))
+        val trackList = mutableListOf<Track>()
+        for (trackId in trackIds) {
+            try {
+                Log.d(TAG, "getTrack: Attepting to get track from remote source...")
+                val track = trackRetrofit.getTrack(userToken, trackId)
+                val links = trackRetrofit.getTrackLink(userToken, track.id)
+
+
+                //This validation code exists because GG backend returns a link to a 404'd page if there
+                //is no art set for the track and I can't figure out how to make Glide happy about it
+                Log.d(TAG, "getTrackWithLink: Validating album art link...")
+                var isValid = false
+                runBlocking {
+                    withContext(Dispatchers.IO) {
+                        isValid = validateLink(links.albumArtLink.toString())
+                    }
+
+                }
+                when(isValid) {
+                    true ->{
+                        Log.d(TAG, "getTrackWithLink: Album art link is valid!")
+                        track.albumArtLink = links.albumArtLink
+                    }
+                    false -> {
+                        Log.d(TAG, "getTrackWithLink: Album art link is NOT valid!")
+                        track.albumArtLink = null
+                    }
+                }
+                track.trackLink = links.trackLink
+
+                Log.d(TAG, "getTrack: Successfully retrieved track from remote source!")
+                recentSongs.add(networkMapper.mapFromTrackEntity(track).toMediaMetadataItem())
+
+                val result = networkMapper.mapFromTrackEntity(track)
+                trackList.add(result)
+
+
+
+            } catch(e: Exception) {
+                Log.d(TAG, "getTrack: Error retrieving tracks from remote source: ${e.toString()}")
+                emit(DataState(null, StateEvent.Error))
+            }
+        }
+        emit(DataState(trackList, StateEvent.TrackListSuccess))
+    }
+
     private fun validateLink(url: String): Boolean {
         val client = OkHttpClient()
 
@@ -176,11 +224,6 @@ constructor(
 
     }
 
-    fun sortSongsAz() {
-
-    }
-
-
     suspend fun getToken(loginRequest: LoginRequest): Flow<SessionState<*>> = flow {
         emit(SessionState(null, StateEvent.Loading))
         try {
@@ -194,11 +237,9 @@ constructor(
     }
 
     private fun writePersonalDataToSharedPref(token: String) {
-
         sharedPreferences.edit()
             .putString(Constants.KEY_USER_TOKEN, token)
             .apply()
-
     }
 
     fun addMediaSource(track: MediaMetadataCompat) {

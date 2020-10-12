@@ -7,4 +7,6 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class PlayingFragment : Fragment(R.layout.fragment_playing) {
 
+
+
 }

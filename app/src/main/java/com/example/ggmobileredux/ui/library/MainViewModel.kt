@@ -1,8 +1,6 @@
 package com.example.ggmobileredux.ui.library
 
-import android.content.Context
-import android.content.ServiceConnection
-import android.net.Uri
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -12,20 +10,14 @@ import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
+import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.retrofit.LoginRequest
 import com.example.ggmobileredux.service.EMPTY_PLAYBACK_STATE
 import com.example.ggmobileredux.service.MusicServiceConnection
-import com.example.ggmobileredux.service.NOTHING_PLAYING
+import com.example.ggmobileredux.util.Constants.KEY_TRACKS
 import com.example.ggmobileredux.util.DataState
 import com.example.ggmobileredux.util.SessionState
-import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource
-import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import com.google.android.exoplayer2.util.Util
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -86,6 +78,15 @@ constructor(
                         }
                         .launchIn(viewModelScope)
                 }
+
+                is MainStateEvent.GetListOfTracksEvent<*> -> {
+                    mainRepository.getListOfTracksWithLinks(mainStateEvent.data as List<Int>)
+                        .onEach {
+                            _dataState.value = it
+                        }
+                        .launchIn(viewModelScope)
+            }
+
                 is MainStateEvent.None -> {
                     //ignored
                 }
@@ -114,6 +115,17 @@ constructor(
     fun playMediaId(mediaId: String) {
         val transportControls = musicServiceConnection.transportControls
         transportControls.playFromMediaId(mediaId, null)
+    }
+
+    fun playMediaList(mediaList: List<Track>) {
+        val transportControls = musicServiceConnection.transportControls
+        val stringArray = mediaList.map { it.id.toString() }.toTypedArray()
+
+        //TODO create a constant if this works
+        val bundle = Bundle()
+        bundle.putStringArray(KEY_TRACKS, stringArray)
+
+        transportControls.playFromMediaId(mediaList[0].id.toString(), bundle)
     }
 
     private val playbackStateObserver = Observer<PlaybackStateCompat> {
@@ -164,14 +176,6 @@ constructor(
         musicServiceConnection.playbackState.removeObserver(playbackStateObserver)
         updatePosition = false
     }
-
-
-    fun menuSortAz() {
-        mainRepository.sortSongsAz()
-    }
-
-
-
 }
 
 private const val POSITION_UPDATE_INTERVAL_MILLIS = 1000L
@@ -214,8 +218,10 @@ sealed class LoginStateEvent<out R> {
 }
 
 sealed class MainStateEvent<out R> {
+
     object GetAllTracksEvents: MainStateEvent<Nothing>()
     data class GetTrackEvent<out T>(val data: T): MainStateEvent<T>()
+    data class GetListOfTracksEvent<out T>(val data: Collection<T>): MainStateEvent<T>()
     object None: MainStateEvent<Nothing>()
 }
 

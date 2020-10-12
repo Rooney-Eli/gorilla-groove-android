@@ -2,7 +2,7 @@ package com.example.ggmobileredux.util
 
 object Constants {
 
-    const val SONG_COLLECTION = "tracks"
+    const val KEY_TRACKS = "tracks"
 
     const val MEDIA_ROOT_ID = "root_id"
 

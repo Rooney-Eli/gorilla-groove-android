@@ -2,7 +2,6 @@ package com.example.ggmobileredux.service
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
@@ -12,10 +11,10 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.util.Constants.MEDIA_ROOT_ID
+import com.example.ggmobileredux.util.Constants.KEY_TRACKS
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
@@ -147,16 +146,28 @@ class MusicService : MediaBrowserServiceCompat() {
 
         override fun onPrepare(playWhenReady: Boolean) = Unit
         override fun onPrepareFromMediaId( mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
-            val trackId = Integer.parseInt(mediaId)
-            Log.d(TAG, "onPrepareFromMediaId: Attempting to retrieve $trackId from repo...")
-            val track = repo.getLoadedSongById(trackId)
 
-            track?.let {
-                Log.d(TAG, "onPrepareFromMediaId: Successfully retrieved ${track.description.title}")
-                repo.addMediaSource(track)
+            if(extras?.containsKey(KEY_TRACKS) == false) {
+                val trackId = Integer.parseInt(mediaId)
+                Log.d(TAG, "onPrepareFromMediaId: Attempting to retrieve $trackId from repo...")
+                val track = repo.getLoadedSongById(trackId)
 
-                //hardcoding playNow basically makes this a onPlayFromMediaId function
-                preparePlayer(track, true)
+                track?.let {
+                    repo.addMediaSource(track)
+                    preparePlayer(it, true)
+                }
+            } else if(extras?.containsKey(KEY_TRACKS) == true) {
+                val trackIds = extras.getStringArray(KEY_TRACKS)
+                val listOfTracks = mutableListOf<MediaMetadataCompat>()
+                trackIds?.map {
+                    repo.getLoadedSongById(Integer.parseInt(it))?.let { metadata ->
+                        listOfTracks.add(metadata)
+                        repo.addMediaSource(metadata)
+                    }
+                }
+                preparePlayer(listOfTracks[0], true)
+            } else {
+                Log.d(TAG, "onPrepareFromMediaId: No media passed to prepare!")
             }
         }
         override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) = Unit
@@ -184,14 +195,6 @@ class MusicService : MediaBrowserServiceCompat() {
         exoPlayer.seekTo(initialWindowIndex, 0L) // seek to the new playing song
         exoPlayer.playWhenReady = playNow
         Log.d(TAG, "preparePlayer: Player prepared!")
-    }
-
-    private fun preparePlayer(
-        tracks: List<MediaMetadataCompat>,
-        itemToPlay: MediaMetadataCompat?,
-        playNow: Boolean
-    ) {
-        //TODO: support multi selections from UI layer
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
