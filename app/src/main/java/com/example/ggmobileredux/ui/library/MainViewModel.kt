@@ -1,27 +1,28 @@
 package com.example.ggmobileredux.ui.library
 
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING
+import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.MainRepository
+import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.retrofit.LoginRequest
 import com.example.ggmobileredux.service.EMPTY_PLAYBACK_STATE
 import com.example.ggmobileredux.service.MusicServiceConnection
-import com.example.ggmobileredux.util.Constants.KEY_TRACKS
 import com.example.ggmobileredux.util.DataState
 import com.example.ggmobileredux.util.SessionState
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.example.ggmobileredux.util.StateEvent
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 class MainViewModel
@@ -35,10 +36,24 @@ constructor(
     private val TAG = "AppDebug"
 
     private var updatePosition = true
-
     private val handler = Handler(Looper.getMainLooper())
 
+    //General App Data
+    private val _loginState: MutableLiveData<SessionState<*>> = MutableLiveData()
+    val loginState: LiveData<SessionState<*>>
+        get() = _loginState
 
+    private val _libraryTracks: MutableLiveData<DataState<*>> = MutableLiveData()
+    val libraryTracks: LiveData<DataState<*>>
+        get() = _libraryTracks
+
+    private val _nowPlayingTracks: MutableLiveData<List<Track>> = MutableLiveData()
+    val nowPlayingTracks: LiveData<List<Track>>
+        get() = _nowPlayingTracks
+
+
+
+    //Controls and Player Data
     private val _currentTrackItem: MutableLiveData<MediaMetadataCompat> = MutableLiveData()
     val currentTrackItem: LiveData<MediaMetadataCompat>
         get() = _currentTrackItem
@@ -47,47 +62,23 @@ constructor(
     val playPauseState: LiveData<PlaybackStateCompat>
         get() = _playPauseState
 
-
-    private val _dataState: MutableLiveData<DataState<*>> = MutableLiveData()
-    val dataState: LiveData<DataState<*>>
-        get() = _dataState
-
-    private val _sessionState: MutableLiveData<SessionState<*>> = MutableLiveData()
-    val sessionState: LiveData<SessionState<*>>
-        get() = _sessionState
-
     val mediaPosition = MutableLiveData<Long>().apply {
         postValue(0L)
     }
 
+
     @ExperimentalCoroutinesApi
-    fun setStateEvent(mainStateEvent: MainStateEvent<Int>) {
+    fun setLibraryEvent(libraryEvent: LibraryEvent<Int>) {
         viewModelScope.launch {
-            when (mainStateEvent) {
-                is MainStateEvent.GetAllTracksEvents -> {
+            when (libraryEvent) {
+                is LibraryEvent.GetAllTracksEvents -> {
                     mainRepository.getAllTracks()
                         .onEach {
-                            _dataState.value = it
+                            _libraryTracks.value = it
                         }
                         .launchIn(viewModelScope)
                 }
-                is MainStateEvent.GetTrackEvent<Int> -> {
-                    mainRepository.getTrackWithLink(mainStateEvent.data)
-                        .onEach {
-                            _dataState.value = it
-                        }
-                        .launchIn(viewModelScope)
-                }
-
-                is MainStateEvent.GetListOfTracksEvent<*> -> {
-                    mainRepository.getListOfTracksWithLinks(mainStateEvent.data as List<Int>)
-                        .onEach {
-                            _dataState.value = it
-                        }
-                        .launchIn(viewModelScope)
-            }
-
-                is MainStateEvent.None -> {
+                is LibraryEvent.None -> {
                     //ignored
                 }
             }
@@ -101,7 +92,7 @@ constructor(
                 is LoginStateEvent.LoginEvent<LoginRequest> -> {
                     mainRepository.getToken(loginStateEvent.data)
                         .onEach {
-                            _sessionState.value = it
+                            _loginState.value = it
                         }
                         .launchIn(viewModelScope)
                 }
@@ -112,29 +103,44 @@ constructor(
         }
     }
 
-    fun playMediaId(mediaId: String) {
-        val transportControls = musicServiceConnection.transportControls
-        transportControls.playFromMediaId(mediaId, null)
+
+    fun getNowPlayingTracks() {
+        _nowPlayingTracks.value = mainRepository.fetchNowPlayingTracks()
     }
 
-    fun playMediaList(mediaList: List<Track>) {
+    fun setNowPlayingTracks(trackIds: List<Int> ) {
+        mainRepository.setNowPlayingTracks(trackIds)
+        _nowPlayingTracks.value = mainRepository.fetchNowPlayingTracks().also { playMedia(it[0]) }
+    }
+
+    fun sortTracks(sort: Sort) {
+        mainRepository.sortTracks(sort)
+        _libraryTracks.value = DataState(mainRepository.sortedTrackList, StateEvent.Success)
+    }
+
+    fun playMedia(track: Track) {
         val transportControls = musicServiceConnection.transportControls
-        val stringArray = mediaList.map { it.id.toString() }.toTypedArray()
-
-        //TODO create a constant if this works
-        val bundle = Bundle()
-        bundle.putStringArray(KEY_TRACKS, stringArray)
-
-        transportControls.playFromMediaId(mediaList[0].id.toString(), bundle)
+        transportControls.playFromMediaId(track.id.toString(), null)
     }
 
     private val playbackStateObserver = Observer<PlaybackStateCompat> {
         val playbackState = it ?: EMPTY_PLAYBACK_STATE
+
         _playPauseState.postValue(playbackState)
+        Log.d(TAG, "${it.state}")
+
+        when(it.state){
+            STATE_PLAYING -> {
+                //notify GG of track and user is listening
+            }
+            STATE_STOPPED -> {
+                //notify GG
+            }
+        }
     }
 
-    private val mediaMetadataObserver = Observer<MediaMetadataCompat> {
-        _currentTrackItem.postValue(it)
+    private val mediaMetadataObserver = Observer<MediaMetadataCompat> { mediaMetadataCompat ->
+        _currentTrackItem.postValue(mediaMetadataCompat)
     }
 
     private val musicServiceConnection = musicServiceConnection.also {
@@ -169,11 +175,14 @@ constructor(
 
     fun skipTo(position: Long) {
         musicServiceConnection.transportControls.seekTo(position)
+
     }
+
 
     override fun onCleared() {
         super.onCleared()
         musicServiceConnection.playbackState.removeObserver(playbackStateObserver)
+        musicServiceConnection.nowPlaying.removeObserver(mediaMetadataObserver)
         updatePosition = false
     }
 }
@@ -217,11 +226,7 @@ sealed class LoginStateEvent<out R> {
     object None: LoginStateEvent<Nothing>()
 }
 
-sealed class MainStateEvent<out R> {
-
-    object GetAllTracksEvents: MainStateEvent<Nothing>()
-    data class GetTrackEvent<out T>(val data: T): MainStateEvent<T>()
-    data class GetListOfTracksEvent<out T>(val data: Collection<T>): MainStateEvent<T>()
-    object None: MainStateEvent<Nothing>()
+sealed class LibraryEvent<out R> {
+    object GetAllTracksEvents: LibraryEvent<Nothing>()
+    object None: LibraryEvent<Nothing>()
 }
-

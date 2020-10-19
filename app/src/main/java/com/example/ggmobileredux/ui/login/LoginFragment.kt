@@ -56,8 +56,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         edit_text_email.requestFocus()
 
         button_login.setOnClickListener {
-            val x = fetchDeviceUUID()
-            val loginRequest = LoginRequest(edit_text_email.text.toString(), edit_text_password.text.toString())
+            val deviceId = fetchDeviceUUID()
+            val loginRequest = LoginRequest(edit_text_email.text.toString(), edit_text_password.text.toString(), deviceId.toString(), "", "ANDROID")
 
 
             viewModel.setLoginStateEvent(LoginStateEvent.LoginEvent(loginRequest))
@@ -72,7 +72,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
     }
 
     private fun subscribeObservers() {
-        viewModel.sessionState.observe(requireActivity(), Observer {
+        viewModel.loginState.observe(requireActivity(), Observer {
             when(it.stateEvent) {
                 is StateEvent.AuthSuccess -> {
                     displayProgressBar(false)

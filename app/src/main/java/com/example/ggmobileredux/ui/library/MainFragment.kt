@@ -13,6 +13,7 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
+import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
 import com.example.ggmobileredux.util.Constants.SORT_BY_DATE_ADDED_NEWEST
@@ -29,7 +30,6 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     val TAG = "AppDebug"
     private val viewModel: MainViewModel by viewModels()
     lateinit var playlistAdapter: PlaylistAdapter
-    lateinit var listOfTrack: List<Track>
     var actionMode : ActionMode? = null
 
     @Inject
@@ -41,7 +41,7 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         setHasOptionsMenu(true)
 
         Log.d(TAG, "onViewCreated: Retrieving tracks for recycler view from viewmodel...")
-        viewModel.setStateEvent(MainStateEvent.GetAllTracksEvents)
+        viewModel.setLibraryEvent(LibraryEvent.GetAllTracksEvents)
         setupRecyclerView()
         subscribeObservers()
     }
@@ -53,27 +53,12 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     }
 
     private fun subscribeObservers() {
-        viewModel.dataState.observe(requireActivity(), Observer {
+        viewModel.libraryTracks.observe(requireActivity(), Observer {
             when (it.stateEvent) {
                 is StateEvent.Success -> {
                     displayProgressBar(false)
-                    listOfTrack = it.data as List<Track>
                     playlistAdapter.submitList(it.data as List<Track>)
-                    playlistAdapter.notifyDataSetChanged()
                 }
-                is StateEvent.TrackSuccess -> {
-                    displayProgressBar(false)
-                    val track = it.data as Track
-                    viewModel.playMediaId(track.id.toString())
-                }
-
-                is StateEvent.TrackListSuccess -> {
-                    displayProgressBar(false)
-                    val tracks = it.data as List<Track>
-                    viewModel.playMediaList(tracks)
-                    Log.d(TAG, "subscribeObservers: ")
-                }
-
                 is StateEvent.Error -> {
                     displayProgressBar(false)
                     Toast.makeText(requireContext(), "Error occurred", Toast.LENGTH_SHORT).show()
@@ -115,28 +100,28 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_AZ)
                     .apply()
-                playlistAdapter.sortList(Sort.A_TO_Z)
+                viewModel.sortTracks(Sort.A_TO_Z)
                 true
             }
             R.id.action_sort_id -> {
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_ID)
                     .apply()
-                playlistAdapter.sortList(Sort.ID)
+                viewModel.sortTracks(Sort.ID)
                 true
             }
             R.id.action_sort_date_added_oldest -> {
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_DATE_ADDED_OLDEST)
                     .apply()
-                playlistAdapter.sortList(Sort.OLDEST)
+                viewModel.sortTracks(Sort.OLDEST)
                 true
             }
             R.id.action_sort_date_added_newest -> {
                 sharedPref.edit()
                     .putString(KEY_SORT, SORT_BY_DATE_ADDED_NEWEST)
                     .apply()
-                playlistAdapter.sortList(Sort.NEWEST)
+                viewModel.sortTracks(Sort.NEWEST)
                 true
             }
 
@@ -159,12 +144,9 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
 
     @ExperimentalCoroutinesApi
     override fun onTrackClick(position: Int) {
-        Log.d(TAG, "onTrackClick: $position")
-        viewModel.setStateEvent(
-            MainStateEvent.GetTrackEvent(
-                playlistAdapter.filteredList[position].id
-            )
-        )
+        val clickedTrack = playlistAdapter.filteredList[position]
+        Log.d(TAG, "onTrackClick: $clickedTrack")
+        viewModel.playMedia(clickedTrack)
     }
 
     override fun onTrackLongClick(position: Int): Boolean {
@@ -203,9 +185,7 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
                 R.id.action_add -> {
 
                     val selectedTracks = playlistAdapter.getSelectedTracks()
-                    viewModel.setStateEvent(MainStateEvent.GetListOfTracksEvent(selectedTracks))
-
-                    
+                    viewModel.setNowPlayingTracks(selectedTracks)
                     mode?.finish()
                     true
                 }

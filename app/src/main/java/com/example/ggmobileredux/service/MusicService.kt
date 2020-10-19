@@ -14,14 +14,17 @@ import android.util.Log
 import androidx.media.MediaBrowserServiceCompat
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.util.Constants.MEDIA_ROOT_ID
-import com.example.ggmobileredux.util.Constants.KEY_TRACKS
-import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.ControlDispatcher
+import com.google.android.exoplayer2.ExoPlaybackException
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import javax.inject.Inject
+
 
 private const val TAG = "AppDebug: Music Service"
 
@@ -47,7 +50,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
     var isForegroundService = false
 
-    private var curPlayingSong: MediaMetadataCompat? = null
+
 
     private var isPlayerInitialized = false
 
@@ -70,20 +73,21 @@ class MusicService : MediaBrowserServiceCompat() {
             setSessionActivity(activityIntent)
             isActive = true
         }
-
-
-
         sessionToken = mediaSession.sessionToken
-
         musicNotificationManager = MusicNotificationManager(
             this,
             mediaSession.sessionToken,
             MusicPlayerNotificationListener(
                 this
-            )
+            ),
+            repo
         ) {
             curSongDuration = exoPlayer.duration
         }
+
+//        serviceScope.launch {
+//            repo.readySources()
+//        }
 
         mediaSessionConnector = MediaSessionConnector(mediaSession)
         mediaSessionConnector.setPlaybackPreparer(MusicPlaybackPreparer())
@@ -96,11 +100,28 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private inner class PlayerEventListener : Player.EventListener {
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+
+            /*
+              * The player does not have any media to play.
+                 int STATE_IDLE = 1;'
+
+               * The player is not able to immediately play from its current position. This state typically
+               * occurs when more data needs to be loaded.
+                  int STATE_BUFFERING = 2;
+
+               * The player is able to immediately play from its current position. The player will be playing if
+               * {@link #getPlayWhenReady()} is true, and paused otherwise.
+                  int STATE_READY = 3;
+
+               * The player has finished playing the media.
+                  int STATE_ENDED = 4;
+             */
+
+
+
+
             when (playbackState) {
                 Player.STATE_IDLE -> {
-
-
-
                     Log.d(TAG, "onPlayerStateChanged: Awaiting media source...")
                     musicNotificationManager.hideNotification()
                 }
@@ -117,6 +138,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 }
                 Player.STATE_ENDED -> {
                     Log.d(TAG, "onPlayerStateChanged: Finished Playing.")
+
                     musicNotificationManager.hideNotification()
                 }
                 else -> {
@@ -127,11 +149,17 @@ class MusicService : MediaBrowserServiceCompat() {
         override fun onPlayerError(error: ExoPlaybackException) {
             Log.d(TAG, "onPlayerError: A player error has occurred")
         }
+
+        override fun onPositionDiscontinuity(reason: Int) {
+            super.onPositionDiscontinuity(reason)
+            val sourceIndex: Int = exoPlayer.currentWindowIndex
+
+        }
+
     }
     private inner class MusicQueueNavigator : TimelineQueueNavigator(mediaSession) {
-        override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat {
-            return repo.recentSongs[windowIndex].description
-        }
+        override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat =
+            repo.metadataList[windowIndex].description
     }
 
     private inner class MusicPlaybackPreparer : MediaSessionConnector.PlaybackPreparer {
@@ -147,28 +175,13 @@ class MusicService : MediaBrowserServiceCompat() {
         override fun onPrepare(playWhenReady: Boolean) = Unit
         override fun onPrepareFromMediaId( mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
 
-            if(extras?.containsKey(KEY_TRACKS) == false) {
-                val trackId = Integer.parseInt(mediaId)
-                Log.d(TAG, "onPrepareFromMediaId: Attempting to retrieve $trackId from repo...")
-                val track = repo.getLoadedSongById(trackId)
+            val itemToPlay: MediaMetadataCompat? = repo.metadataList.find { it.id == mediaId }
+            preparePlayer(
+                itemToPlay,
+                playWhenReady
+            )
 
-                track?.let {
-                    repo.addMediaSource(track)
-                    preparePlayer(it, true)
-                }
-            } else if(extras?.containsKey(KEY_TRACKS) == true) {
-                val trackIds = extras.getStringArray(KEY_TRACKS)
-                val listOfTracks = mutableListOf<MediaMetadataCompat>()
-                trackIds?.map {
-                    repo.getLoadedSongById(Integer.parseInt(it))?.let { metadata ->
-                        listOfTracks.add(metadata)
-                        repo.addMediaSource(metadata)
-                    }
-                }
-                preparePlayer(listOfTracks[0], true)
-            } else {
-                Log.d(TAG, "onPrepareFromMediaId: No media passed to prepare!")
-            }
+
         }
         override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) = Unit
         override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle?) = Unit
@@ -181,20 +194,18 @@ class MusicService : MediaBrowserServiceCompat() {
         ) = false
     }
 
+
+
     private fun preparePlayer(
-        track: MediaMetadataCompat,
-        playNow: Boolean
+        itemToPlay: MediaMetadataCompat?,
+        playWhenReady: Boolean
     ) {
-        Log.d(TAG, "preparePlayer: Preparing player for ${track.description.title}...")
-        curPlayingSong = track
-
-        val initialWindowIndex = repo.recentSongs.indexOf(track)
-
-        exoPlayer.prepare(repo.concatenatingMediaSource)
-        isPlayerInitialized = true
-        exoPlayer.seekTo(initialWindowIndex, 0L) // seek to the new playing song
-        exoPlayer.playWhenReady = playNow
-        Log.d(TAG, "preparePlayer: Player prepared!")
+        val initialWindowIndex = if (itemToPlay == null) 0 else repo.metadataList.indexOf(itemToPlay)
+        exoPlayer.playWhenReady = playWhenReady
+        exoPlayer.stop(true)
+        exoPlayer.addMediaSource(repo.concatenatingMediaSource)
+        exoPlayer.prepare()
+        exoPlayer.seekTo(initialWindowIndex, 0)
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {

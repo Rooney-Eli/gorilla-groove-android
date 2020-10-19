@@ -17,6 +17,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.ggmobileredux.R
+import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.util.Constants.NOTIFICATION_CHANNEL_ID
 import com.example.ggmobileredux.util.Constants.NOTIFICATION_ID
 import com.google.android.exoplayer2.Player
@@ -27,6 +28,7 @@ class MusicNotificationManager(
     private val context: Context,
     sessionToken: MediaSessionCompat.Token,
     notificationListener: PlayerNotificationManager.NotificationListener,
+    mainRepository: MainRepository,
     private val newSongCallback: () -> Unit
 ) {
 
@@ -43,7 +45,7 @@ class MusicNotificationManager(
             R.string.notification_channel_name,
             R.string.notification_channel_description,
             NOTIFICATION_ID,
-            DescriptionAdapter(mediaController),
+            DescriptionAdapter(mediaController, mainRepository),
             notificationListener
         ).apply {
             setSmallIcon(R.drawable.ic_music)
@@ -60,7 +62,8 @@ class MusicNotificationManager(
     }
 
     private inner class DescriptionAdapter(
-        private val mediaController: MediaControllerCompat
+        private val mediaController: MediaControllerCompat,
+        private val mainRepository: MainRepository
     ) : PlayerNotificationManager.MediaDescriptionAdapter {
 
         var currentIconUri: Uri? = null
@@ -90,13 +93,9 @@ class MusicNotificationManager(
 
             return if (currentIconUri != iconUri || currentBitmap == null) {
 
-                // Cache the bitmap for the current song so that successive calls to
-                // `getCurrentLargeIcon` don't cause the bitmap to be recreated.
                 currentIconUri = iconUri
                 serviceScope.launch {
-                    currentBitmap = iconUri?.let {
-                        resolveUriAsBitmap(it)
-                    }
+                    currentBitmap = resolveUriAsBitmap(iconUri)
                     currentBitmap?.let { callback.onBitmap(it) }
                 }
                 BitmapFactory.decodeResource(context.resources, R.drawable.blue)
@@ -105,14 +104,21 @@ class MusicNotificationManager(
             }
         }
 
-        private suspend fun resolveUriAsBitmap(uri: Uri): Bitmap? {
+        private suspend fun resolveUriAsBitmap(iconUri: Uri?): Bitmap? {
             return withContext(Dispatchers.IO) {
                 // Block on downloading artwork.
-                Glide.with(context).applyDefaultRequestOptions(glideOptions)
-                    .asBitmap()
-                    .load(uri)
-                    .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-                    .get()
+                val links = mainRepository.getTrackLinks(Integer.parseInt(iconUri.toString()))
+                val artLink = links.albumArtLink
+                artLink?.let {
+
+                    Glide.with(context).applyDefaultRequestOptions(glideOptions)
+                        .asBitmap()
+                        .load(it)
+                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                        .get()
+                }
+
+
             }
         }
     }

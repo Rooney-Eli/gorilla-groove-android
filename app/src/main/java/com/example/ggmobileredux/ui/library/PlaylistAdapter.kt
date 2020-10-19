@@ -31,16 +31,8 @@ class PlaylistAdapter(
         trackList = tracks
         filteredList.clear()
         filteredList.addAll(trackList)
-    }
-
-    fun sortList(sort: Sort) {
-        when(sort) {
-            Sort.ID -> filteredList.sortBy { it.id }
-            Sort.A_TO_Z -> filteredList.sortBy { it.name }
-            Sort.OLDEST -> filteredList.sortBy { it.addedToLibrary }
-            Sort.NEWEST -> filteredList.sortByDescending { it.addedToLibrary }
-        }
         notifyDataSetChanged()
+
     }
 
     fun getSelectedTracks(): List<Int> {
@@ -50,7 +42,6 @@ class PlaylistAdapter(
             if(checkedTracks.getValue(id)) {
                 tracks.add(id)
             }
-
         }
         return tracks
     }
@@ -76,7 +67,7 @@ class PlaylistAdapter(
         holder.checkbox.setOnCheckedChangeListener { buttonView, isChecked ->
             if(buttonView.isShown) {
                 buttonView.isChecked = isChecked
-                checkedTracks.put(filteredList[position].id, isChecked)
+                checkedTracks[filteredList[position].id] = isChecked
             }
         }
     }
@@ -103,8 +94,12 @@ class PlaylistAdapter(
         override fun onClick(v: View?) {
             val position = adapterPosition
             //in event of animation
-            if(position != RecyclerView.NO_POSITION) {
-                listener.onTrackClick(position)
+            if(showingCheckBox){
+                checkbox.isChecked = !checkbox.isChecked
+            } else {
+                if(position != RecyclerView.NO_POSITION) {
+                    listener.onTrackClick(position)
+                }
             }
         }
 
@@ -126,8 +121,8 @@ class PlaylistAdapter(
                 } else {
                     val filterPattern = constraint.toString().toLowerCase(Locale.ROOT).trim()
                     trackList.filter {
-                        it.name.toLowerCase(Locale.ROOT).trim().contains(filterPattern) ||
-                        it.artist.toLowerCase(Locale.ROOT).trim().contains(filterPattern)
+                        it.name.toLowerCase(Locale.ROOT).contains(filterPattern) ||
+                        it.artist.toLowerCase(Locale.ROOT).contains(filterPattern)
                     }
                 }
 
@@ -149,4 +144,3 @@ class PlaylistAdapter(
         fun onTrackLongClick(position: Int) : Boolean
     }
 }
-enum class Sort {ID, A_TO_Z, NEWEST, OLDEST}
