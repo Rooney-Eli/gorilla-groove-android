@@ -5,8 +5,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING
-import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
+import android.support.v4.media.session.PlaybackStateCompat.*
 import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
@@ -67,6 +66,10 @@ constructor(
     }
 
 
+    //val _users: MutableLiveData<>
+
+
+
     @ExperimentalCoroutinesApi
     fun setLibraryEvent(libraryEvent: LibraryEvent<Int>) {
         viewModelScope.launch {
@@ -123,19 +126,23 @@ constructor(
         transportControls.playFromMediaId(track.id.toString(), null)
     }
 
-    private val playbackStateObserver = Observer<PlaybackStateCompat> {
-        val playbackState = it ?: EMPTY_PLAYBACK_STATE
+    private val playbackStateObserver = Observer<PlaybackStateCompat> { pbState ->
+        val playbackState = pbState ?: EMPTY_PLAYBACK_STATE
 
         _playPauseState.postValue(playbackState)
-        Log.d(TAG, "${it.state}")
+        Log.d(TAG, "${pbState.state}")
 
-        when(it.state){
+        when(pbState.state){
             STATE_PLAYING -> {
-                //notify GG of track and user is listening
+                _currentTrackItem.value?.description?.let { mainRepository.sendNowPlayingToServer(it) }
             }
             STATE_STOPPED -> {
-                //notify GG
+                currentTrackItem.value?.description?.let { mainRepository.sendStoppedPlayingToServer(it) }
             }
+            STATE_PAUSED -> {
+                currentTrackItem.value?.description?.let { mainRepository.sendStoppedPlayingToServer(it) }
+            }
+
         }
     }
 

@@ -17,4 +17,7 @@ interface TrackRetrofit {
 
     @POST("/api/authentication/login")
     suspend fun getAuthorization(@Body loginRequest: LoginRequest): LoginResponseNetworkEntity
+
+    @GET("api/track/users")
+    suspend fun getUsers(@Header("Authorization") token: String ): UsersNetworkEntity
 }

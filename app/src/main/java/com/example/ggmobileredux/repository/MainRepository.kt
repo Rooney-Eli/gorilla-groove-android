@@ -2,13 +2,13 @@ package com.example.ggmobileredux.repository
 
 import android.content.SharedPreferences
 import android.net.Uri
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.util.Log
+import com.example.ggmobileredux.di.AppModule
+import com.example.ggmobileredux.di.RetrofitModule
 import com.example.ggmobileredux.model.Track
-import com.example.ggmobileredux.retrofit.LoginRequest
-import com.example.ggmobileredux.retrofit.NetworkMapper
-import com.example.ggmobileredux.retrofit.TrackLinkResponse
-import com.example.ggmobileredux.retrofit.TrackRetrofit
+import com.example.ggmobileredux.retrofit.*
 import com.example.ggmobileredux.room.CacheMapper
 import com.example.ggmobileredux.room.TrackDao
 import com.example.ggmobileredux.util.Constants.KEY_SORT
@@ -27,10 +27,16 @@ import com.google.android.exoplayer2.source.ShuffleOrder
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.ResolvingDataSource
+import dagger.Provides
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.*
+import org.json.JSONObject
+import javax.inject.Inject
+import javax.inject.Singleton
+
 
 class MainRepository
 constructor(
@@ -39,23 +45,22 @@ constructor(
     private val cacheMapper: CacheMapper,
     private val networkMapper: NetworkMapper,
     private val sharedPreferences: SharedPreferences,
-    private val dataSourceFactory: DefaultDataSourceFactory
+    private val dataSourceFactory: DefaultDataSourceFactory,
+    private val okClient: OkHttpClient
 ) {
     private val TAG = "AppDebug: Repository"
 
+    lateinit var webSocket: WebSocket
 
-    var userToken: String = sharedPreferences.getString(KEY_USER_TOKEN, "") ?: ""
+    private var userToken: String = sharedPreferences.getString(KEY_USER_TOKEN, "") ?: ""
 
     var trackSorting: Sort = sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort() ?: Sort.ID
 
     private val allTracks = LinkedHashMap<Int, Track>() //glorified memory for lookups
 
-    /*
-        Repo must supply:
-            MediaSource for exoplayer - concatenatingMediaSource
-            List<MediaMetadataCompat> for mediaSession - metadataList
-            Collection<Track> for UI - allTracks
-     */
+    init {
+        initWebSocket()
+    }
 
     //KEEP THESE IN SYNC WITH EACH OTHER
     val concatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
@@ -79,6 +84,27 @@ constructor(
     }
 
 
+    fun sendNowPlayingToServer(track: MediaDescriptionCompat) {
+        val jsonObject = JSONObject().apply {
+            put("messageType", "NOW_PLAYING")
+            put("trackId", track.mediaId)
+            put("isPlaying", "true")
+        }
+
+        val mes = jsonObject.toString()
+        webSocket.send(mes)
+    }
+
+    fun sendStoppedPlayingToServer(track: MediaDescriptionCompat) {
+        val jsonObject = JSONObject().apply {
+            put("messageType", "NOW_PLAYING")
+            put("trackId", track.mediaId)
+            put("isPlaying", "false")
+        }
+
+        val mes = jsonObject.toString()
+        webSocket.send(mes)
+    }
 
 
     fun sortTracks(sort: Sort) {
@@ -247,8 +273,8 @@ constructor(
             .build()
         val call = client.newCall(request)
         val response = call.execute()
-        Log.d(TAG, "validateLink: server response: ${response.code()}")
-        return response.code() != 404
+        Log.d(TAG, "validateLink: server response: ${response.code}")
+        return response.code != 404
     }
 
     suspend fun getToken(loginRequest: LoginRequest): Flow<SessionState<*>> = flow {
@@ -261,11 +287,31 @@ constructor(
                 .putString(KEY_USER_TOKEN, userToken)
                 .apply()
 
+            initWebSocket()
+
             emit(SessionState(loginResponse, StateEvent.AuthSuccess))
         } catch(e: Exception) {
             emit(SessionState(null, StateEvent.Error))
         }
     }
+
+    private fun initWebSocket() {
+        if(userToken != "") {
+            val request = Request.Builder()
+                .url("wss://gorillagroove.net/api/socket")
+                .addHeader("Authorization", "Bearer $userToken")
+                .build()
+            webSocket = okClient.newWebSocket(request, OkHttpWebSocket())
+        }
+
+    }
+    
+    fun cleanUpAndCloseConnections() {
+        okClient.dispatcher.executorService.shutdown()
+    }
+
+
+
 }
 
 fun Track.toMediaMetadataItem(): MediaMetadataCompat =

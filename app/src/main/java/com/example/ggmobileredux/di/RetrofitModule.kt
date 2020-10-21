@@ -7,13 +7,20 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ApplicationComponent
+import okhttp3.*
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
 
 @Module
 @InstallIn(ApplicationComponent::class)
 object RetrofitModule {
+
+    @Qualifier
+    @Retention(AnnotationRetention.BINARY)
+    annotation class OkHttpClientProvider
 
     @Singleton
     @Provides
@@ -38,4 +45,11 @@ object RetrofitModule {
             .create(TrackRetrofit::class.java)
     }
 
+    @Singleton
+    @Provides
+    @OkHttpClientProvider
+    fun provideOkHttpClient(): OkHttpClient {
+           return  OkHttpClient.Builder()
+                .build()
+    }
 }

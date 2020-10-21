@@ -11,6 +11,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ApplicationComponent
+import okhttp3.OkHttpClient
+import okhttp3.WebSocket
 import javax.inject.Singleton
 
 @InstallIn(ApplicationComponent::class)
@@ -25,8 +27,9 @@ object RepositoryModule {
         cacheMapper: CacheMapper,
         networkMapper: NetworkMapper,
         sharedPreferences: SharedPreferences,
-        dataSourceFactory: DefaultDataSourceFactory
+        dataSourceFactory: DefaultDataSourceFactory,
+        @RetrofitModule.OkHttpClientProvider okClient: OkHttpClient
     ): MainRepository {
-        return MainRepository(trackDao, retrofit, cacheMapper, networkMapper, sharedPreferences, dataSourceFactory)
+        return MainRepository(trackDao, retrofit, cacheMapper, networkMapper, sharedPreferences, dataSourceFactory, okClient)
     }
 }

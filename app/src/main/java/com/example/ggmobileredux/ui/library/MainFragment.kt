@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.Sort
+import com.example.ggmobileredux.retrofit.OkHttpWebSocket
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
 import com.example.ggmobileredux.util.Constants.SORT_BY_DATE_ADDED_NEWEST
@@ -23,7 +24,20 @@ import com.example.ggmobileredux.util.StateEvent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.WebSocket
+import java.security.KeyStore
+import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
+import java.util.*
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+
 
 @AndroidEntryPoint
 class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackListener {
@@ -31,6 +45,8 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     private val viewModel: MainViewModel by viewModels()
     lateinit var playlistAdapter: PlaylistAdapter
     var actionMode : ActionMode? = null
+
+    val client = OkHttpClient()
 
     @Inject
     lateinit var sharedPref: SharedPreferences
@@ -44,6 +60,18 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         viewModel.setLibraryEvent(LibraryEvent.GetAllTracksEvents)
         setupRecyclerView()
         subscribeObservers()
+
+
+
+//        client.dispatcher.executorService.shutdown()
+
+
+
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
     }
 
     private fun setupRecyclerView() = playlist_rv.apply {
@@ -200,4 +228,9 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
             actionMode = null
         }
     }
+
+
+
 }
+
+

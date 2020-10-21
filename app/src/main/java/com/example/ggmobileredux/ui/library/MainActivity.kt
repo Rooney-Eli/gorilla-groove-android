@@ -49,8 +49,8 @@ class MainActivity : AppCompatActivity() {
         bottomNavigationView.setupWithNavController(navController)
 
         navHostFragment.findNavController()
-            .addOnDestinationChangedListener{ _, destination, _ ->
-                when(destination.id) {
+            .addOnDestinationChangedListener { _, destination, _ ->
+                when (destination.id) {
                     R.id.loginFragment -> {
                         bottomNavigationView.visibility = View.GONE
                         playerControlView.visibility = View.GONE
@@ -93,23 +93,27 @@ class MainActivity : AppCompatActivity() {
         subscribeObservers()
 
         initProgressBar()
-        playpause_button.setOnClickListener{
+        playpause_button.setOnClickListener {
             viewModel.playPause()
         }
         audio_seek_bar.setOnSeekBarChangeListener(
-          object : SeekBar.OnSeekBarChangeListener {
-              override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-              }
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                }
 
-              override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                  Log.d(TAG, "onStartTrackingTouch: ")
-              }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                    Log.d(TAG, "onStartTrackingTouch: ")
+                }
 
-              override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                  viewModel.skipTo(audio_seek_bar.progress.toLong() * 1000)
-              }
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                    viewModel.skipTo(audio_seek_bar.progress.toLong() * 1000)
+                }
 
-          }
+            }
         )
     }
 
@@ -131,13 +135,15 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.currentTrackItem.observe(this, Observer {
             now_playing_textview.text = it.description?.title
-            track_duration_textview.text = it.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).getSongTimeFromMilliseconds()
-            audio_seek_bar.max = it.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).toInt()/1000
+            track_duration_textview.text =
+                it.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).getSongTimeFromMilliseconds()
+            audio_seek_bar.max =
+                it.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).toInt() / 1000
         })
 
         viewModel.mediaPosition.observe(this, Observer {
             track_position_textview.text = it?.getSongTimeFromMilliseconds() ?: "0"
-            audio_seek_bar.progress = (it?.toInt() ?: 0) /1000
+            audio_seek_bar.progress = (it?.toInt() ?: 0) / 1000
         })
 
     }

@@ -77,7 +77,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                 is StateEvent.AuthSuccess -> {
                     displayProgressBar(false)
                     val response = it.data as LoginResponseNetworkEntity
-                    //viewModel. = response.token
                     hideKeyboard(activity as MainActivity)
 
                     writePersonalDataToSharedPref()
