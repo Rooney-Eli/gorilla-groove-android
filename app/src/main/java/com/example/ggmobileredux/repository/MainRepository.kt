@@ -68,9 +68,6 @@ constructor(
     private val nowPlayingTracks = mutableListOf<Track>()
 
     fun fetchNowPlayingTracks() : List<Track>{
-        if(nowPlayingTracks.isNullOrEmpty()) {
-            nowPlayingTracks.addAll(sortedTrackList)
-        }
         return nowPlayingTracks
     }
 
