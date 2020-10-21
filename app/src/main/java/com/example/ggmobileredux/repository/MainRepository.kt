@@ -246,10 +246,13 @@ constructor(
     }
 
     private suspend fun fetchAllTracksFromDatabase() : List<Track> {
-
-        
-
-        return cacheMapper.mapFromEntityList(trackDao.getAllTracks())
+        return when(sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort()) {
+            Sort.ID -> cacheMapper.mapFromEntityList(trackDao.getAllTracks())
+            Sort.A_TO_Z -> cacheMapper.mapFromEntityList(trackDao.getAllTracksSortedAz())
+            Sort.NEWEST -> cacheMapper.mapFromEntityList(trackDao.getAllTracksSortedDateAddedNewest())
+            Sort.OLDEST -> cacheMapper.mapFromEntityList(trackDao.getAllTracksSortedDateAddedOldest())
+            else -> cacheMapper.mapFromEntityList(trackDao.getAllTracks())
+        }
     }
 
     private suspend fun fetchAllTracksFromNetwork() : List<Track> {
@@ -306,9 +309,6 @@ constructor(
     fun cleanUpAndCloseConnections() {
         okClient.dispatcher.executorService.shutdown()
     }
-
-
-
 }
 
 fun Track.toMediaMetadataItem(): MediaMetadataCompat =
