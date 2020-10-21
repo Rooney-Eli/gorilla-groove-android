@@ -2,6 +2,7 @@ package com.example.ggmobileredux.network
 
 import com.example.ggmobileredux.model.LoginResponse
 import com.example.ggmobileredux.model.Track
+import com.example.ggmobileredux.model.User
 import javax.inject.Inject
 
 
@@ -57,5 +58,26 @@ constructor() {
             username = domainModel.username
         )
     }
+
+    fun mapFromUserEntity(entity: UserNetworkEntity): User {
+        return User(
+            id = entity.id,
+            username = entity.username,
+            email = entity.email
+        )
+    }
+
+    fun mapToUserEntity(domainModel: User): UserNetworkEntity {
+        return UserNetworkEntity(
+            id = domainModel.id,
+            username = domainModel.username,
+            email = domainModel.email
+        )
+    }
+
+    fun mapFromUserEntityList(entities: List<UserNetworkEntity>): List<User> {
+        return entities.map { mapFromUserEntity(it) }
+    }
+
 
 }

@@ -1,12 +1,13 @@
 package com.example.ggmobileredux.database
 
 import com.example.ggmobileredux.model.Track
+import com.example.ggmobileredux.model.User
 import javax.inject.Inject
 
 class CacheMapper
 @Inject
 constructor() {
-    fun mapFromEntity(entity: TrackCacheEntity): Track {
+    fun mapFromTrackEntity(entity: TrackCacheEntity): Track {
         return Track(
             id = entity.id,
             name = entity.name,
@@ -19,7 +20,7 @@ constructor() {
         )
     }
 
-    fun mapToEntity(domainModel: Track): TrackCacheEntity {
+    fun mapToTrackEntity(domainModel: Track): TrackCacheEntity {
         return TrackCacheEntity(
             id = domainModel.id,
             name = domainModel.name,
@@ -32,12 +33,39 @@ constructor() {
         )
     }
 
-    fun mapFromEntityList(entities: List<TrackCacheEntity>): List<Track> {
-        return entities.map { mapFromEntity(it) }
+    fun mapFromTrackEntityList(entities: List<TrackCacheEntity>): List<Track> {
+        return entities.map { mapFromTrackEntity(it) }
     }
 
-    fun mapToEntityList(tracks: List<Track>): List<TrackCacheEntity> {
-        return tracks.map { mapToEntity(it) }
+    fun mapToTrackEntityList(tracks: List<Track>): List<TrackCacheEntity> {
+        return tracks.map { mapToTrackEntity(it) }
+    }
+
+
+
+    fun mapFromUserEntity(entity: UserCacheEntity): User {
+        return User(
+            id = entity.id,
+            username = entity.username,
+            email = entity.email
+        )
+    }
+
+    fun mapToUserEntity(domainModel: User): UserCacheEntity {
+        return UserCacheEntity(
+            id = domainModel.id,
+            username = domainModel.username,
+            email = domainModel.email
+
+        )
+    }
+
+    fun mapFromUserEntityList(entities: List<UserCacheEntity>): List<User> {
+        return entities.map { mapFromUserEntity(it) }
+    }
+
+    fun mapToUserEntityList(tracks: List<User>): List<UserCacheEntity> {
+        return tracks.map { mapToUserEntity(it) }
     }
 
 

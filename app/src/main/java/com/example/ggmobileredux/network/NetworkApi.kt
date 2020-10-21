@@ -16,6 +16,6 @@ interface NetworkApi {
     @POST("/api/authentication/login")
     suspend fun getAuthorization(@Body loginRequest: LoginRequest): LoginResponseNetworkEntity
 
-    @GET("api/track/users")
-    suspend fun getUsers(@Header("Authorization") token: String ): UsersNetworkEntity
+    @GET("api/user")
+    suspend fun getAllUsers(@Header("Authorization") token: String ): List<UserNetworkEntity>
 }

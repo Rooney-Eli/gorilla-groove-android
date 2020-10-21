@@ -8,7 +8,8 @@ import android.util.Log
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.network.*
 import com.example.ggmobileredux.database.CacheMapper
-import com.example.ggmobileredux.database.TrackDao
+import com.example.ggmobileredux.database.DatabaseDao
+import com.example.ggmobileredux.model.User
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.KEY_USER_TOKEN
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
@@ -34,7 +35,7 @@ import org.json.JSONObject
 
 class MainRepository
 constructor(
-    private val trackDao: TrackDao,
+    private val databaseDao: DatabaseDao,
     private val networkApi: NetworkApi,
     private val cacheMapper: CacheMapper,
     private val networkMapper: NetworkMapper,
@@ -50,7 +51,9 @@ constructor(
 
     var trackSorting: Sort = sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort() ?: Sort.ID
 
-    private val allTracks = LinkedHashMap<Int, Track>() //glorified memory for lookups
+    //glorified memory for lookups
+    private val allTracks = LinkedHashMap<Int, Track>()
+    private val allUsers = mutableListOf<User>()
 
     init {
         initWebSocket()
@@ -231,7 +234,7 @@ constructor(
         val remoteCollection = fetchAllTracksFromNetwork()
         if(!remoteCollection.isNullOrEmpty()) {
             remoteCollection.map {
-                trackDao.insert(cacheMapper.mapToEntity(it))
+                databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
                 allTracks.put(it.id, it)
             }
             sortedTrackList.clear()
@@ -247,11 +250,11 @@ constructor(
 
     private suspend fun fetchAllTracksFromDatabase() : List<Track> {
         return when(sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort()) {
-            Sort.ID -> cacheMapper.mapFromEntityList(trackDao.getAllTracks())
-            Sort.A_TO_Z -> cacheMapper.mapFromEntityList(trackDao.getAllTracksSortedAz())
-            Sort.NEWEST -> cacheMapper.mapFromEntityList(trackDao.getAllTracksSortedDateAddedNewest())
-            Sort.OLDEST -> cacheMapper.mapFromEntityList(trackDao.getAllTracksSortedDateAddedOldest())
-            else -> cacheMapper.mapFromEntityList(trackDao.getAllTracks())
+            Sort.ID -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracks())
+            Sort.A_TO_Z -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracksSortedAz())
+            Sort.NEWEST -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracksSortedDateAddedNewest())
+            Sort.OLDEST -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracksSortedDateAddedOldest())
+            else -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracks())
         }
     }
 
@@ -305,6 +308,72 @@ constructor(
         }
 
     }
+
+
+
+    suspend fun getAllUsers(): Flow<DataState<*>> = flow {
+
+        if(!allUsers.isNullOrEmpty()){
+            Log.d(TAG, "getAllTracks: Retrieving Users From sorted list in memory")
+            emit(DataState(allUsers, StateEvent.Success))
+
+            return@flow
+        }
+
+        //if in memory, emit the memory
+        if(!allUsers.isNullOrEmpty()) {
+            Log.d(TAG, "getAllTracks: Retrieving Users From memory")
+            emit(DataState(allUsers, StateEvent.Success))
+
+            return@flow
+        }
+
+        emit(DataState(null, StateEvent.Loading))
+
+        //else in database, fetch db, cache to memory and emit memory
+        val localCollection = fetchAllUsersFromDatabase()
+        if(!localCollection.isNullOrEmpty()) {
+            Log.d(TAG, "getAllUsers: Retrieving Users From database")
+            allUsers.clear()
+            localCollection.map {
+                allUsers.add(it)
+            }
+            emit(DataState(allUsers, StateEvent.Success))
+            return@flow
+        }
+
+        //else in network, fetch network, write to database and cache in memory, then emit memory
+        Log.d(TAG, "getAllUsers: Retrieving Users from network")
+        val remoteCollection = fetchAllUsersFromNetwork()
+        if(!remoteCollection.isNullOrEmpty()) {
+            allUsers.clear()
+            remoteCollection.map {
+                databaseDao.insertUser(cacheMapper.mapToUserEntity(it))
+                allUsers.add(it)
+            }
+            emit(DataState(allUsers, StateEvent.Success))
+            return@flow
+        }
+
+        //else unable to retrieve data
+        emit(DataState(null, StateEvent.Error))
+    }
+
+
+    private suspend fun fetchAllUsersFromDatabase() : List<User> {
+        return cacheMapper.mapFromUserEntityList(databaseDao.getAllUsers())
+    }
+
+    private suspend fun fetchAllUsersFromNetwork() : List<User> {
+        return try{
+            networkMapper.mapFromUserEntityList(networkApi.getAllUsers(userToken))
+        } catch (e: Exception){
+            Log.d(TAG, "$e")
+            emptyList()
+        }
+    }
+
+
     
     fun cleanUpAndCloseConnections() {
         okClient.dispatcher.executorService.shutdown()

@@ -2,8 +2,8 @@ package com.example.ggmobileredux.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.ggmobileredux.database.TrackDao
-import com.example.ggmobileredux.database.TrackDatabase
+import com.example.ggmobileredux.database.DatabaseDao
+import com.example.ggmobileredux.database.GorillaDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,11 +17,11 @@ object DatabaseModule {
 
     @Singleton
     @Provides
-    fun provideTrackDb(@ApplicationContext context: Context): TrackDatabase {
+    fun provideTrackDb(@ApplicationContext context: Context): GorillaDatabase {
         return Room.databaseBuilder(
             context,
-            TrackDatabase::class.java,
-            TrackDatabase.DATABASE_NAME
+            GorillaDatabase::class.java,
+            GorillaDatabase.DATABASE_NAME
         )
             .fallbackToDestructiveMigration()
             .build()
@@ -30,8 +30,8 @@ object DatabaseModule {
 
     @Singleton
     @Provides
-    fun provideTrackDAO(trackDatabase: TrackDatabase): TrackDao {
-        return trackDatabase.trackDao()
+    fun provideTrackDAO(gorillaDatabase: GorillaDatabase): DatabaseDao {
+        return gorillaDatabase.databaseDao()
     }
 
 }

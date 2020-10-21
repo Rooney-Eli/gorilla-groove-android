@@ -6,11 +6,11 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
-interface TrackDao {
+interface DatabaseDao {
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(trackEntity: TrackCacheEntity): Long //returns insertion row number
+    suspend fun insertTrack(trackEntity: TrackCacheEntity): Long //returns insertion row number
 
     @Query("SELECT * from tracks")
     suspend fun getAllTracks(): List<TrackCacheEntity>
@@ -23,6 +23,14 @@ interface TrackDao {
 
     @Query("SELECT * from tracks ORDER BY addedToLibrary DESC")
     suspend fun  getAllTracksSortedDateAddedNewest(): List<TrackCacheEntity>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUser(userEntity: UserCacheEntity): Long
+
+    @Query("SELECT * from users")
+    suspend fun getAllUsers(): List<UserCacheEntity>
+
 
 
 

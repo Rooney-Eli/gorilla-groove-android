@@ -11,6 +11,7 @@ import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
 import com.example.ggmobileredux.model.Track
+import com.example.ggmobileredux.model.User
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.network.LoginRequest
@@ -50,7 +51,9 @@ constructor(
     val nowPlayingTracks: LiveData<List<Track>>
         get() = _nowPlayingTracks
 
-
+    private val _users: MutableLiveData<DataState<*>> = MutableLiveData()
+    val users: LiveData<DataState<*>>
+        get() = _users
 
     //Controls and Player Data
     private val _currentTrackItem: MutableLiveData<MediaMetadataCompat> = MutableLiveData()
@@ -66,9 +69,26 @@ constructor(
     }
 
 
-    //val _users: MutableLiveData<>
 
 
+
+    @ExperimentalCoroutinesApi
+    fun setUsersEvent(usersEvent: UsersEvent<Nothing>) {
+        viewModelScope.launch {
+            when (usersEvent) {
+                is UsersEvent.GetAllUsers -> {
+                    mainRepository.getAllUsers()
+                        .onEach {
+                            _users.value = it
+                        }
+                        .launchIn(viewModelScope)
+                }
+                is UsersEvent.None -> {
+                    //ignored
+                }
+            }
+        }
+    }
 
     @ExperimentalCoroutinesApi
     fun setLibraryEvent(libraryEvent: LibraryEvent<Int>) {
@@ -236,4 +256,9 @@ sealed class LoginStateEvent<out R> {
 sealed class LibraryEvent<out R> {
     object GetAllTracksEvents: LibraryEvent<Nothing>()
     object None: LibraryEvent<Nothing>()
+}
+
+sealed class UsersEvent<Nothing> {
+    object GetAllUsers: UsersEvent<Nothing>()
+    object None: UsersEvent<Nothing>()
 }
