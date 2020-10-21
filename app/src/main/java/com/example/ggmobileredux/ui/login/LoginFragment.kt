@@ -11,8 +11,8 @@ import androidx.lifecycle.Observer
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.ggmobileredux.R
-import com.example.ggmobileredux.retrofit.LoginRequest
-import com.example.ggmobileredux.retrofit.LoginResponseNetworkEntity
+import com.example.ggmobileredux.network.LoginRequest
+import com.example.ggmobileredux.network.LoginResponseNetworkEntity
 import com.example.ggmobileredux.ui.library.LoginStateEvent
 import com.example.ggmobileredux.ui.library.MainActivity
 import com.example.ggmobileredux.ui.library.MainViewModel

@@ -1,6 +1,6 @@
 package com.example.ggmobileredux.di
 
-import com.example.ggmobileredux.retrofit.TrackRetrofit
+import com.example.ggmobileredux.network.NetworkApi
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -16,7 +16,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(ApplicationComponent::class)
-object RetrofitModule {
+object NetworkModule {
 
     @Qualifier
     @Retention(AnnotationRetention.BINARY)
@@ -39,10 +39,10 @@ object RetrofitModule {
 
     @Singleton
     @Provides
-    fun provideTrackService(retrofit: Retrofit.Builder): TrackRetrofit {
+    fun provideTrackService(retrofit: Retrofit.Builder): NetworkApi {
         return retrofit
             .build()
-            .create(TrackRetrofit::class.java)
+            .create(NetworkApi::class.java)
     }
 
     @Singleton

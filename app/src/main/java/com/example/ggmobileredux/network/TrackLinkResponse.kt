@@ -1,4 +1,4 @@
-package com.example.ggmobileredux.retrofit
+package com.example.ggmobileredux.network
 
 import com.google.gson.annotations.SerializedName
 

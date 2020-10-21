@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.Sort
-import com.example.ggmobileredux.retrofit.OkHttpWebSocket
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
 import com.example.ggmobileredux.util.Constants.SORT_BY_DATE_ADDED_NEWEST
@@ -25,18 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.WebSocket
-import java.security.KeyStore
-import java.security.cert.CertificateException
-import java.security.cert.X509Certificate
-import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
 
 
 @AndroidEntryPoint

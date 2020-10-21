@@ -2,8 +2,8 @@ package com.example.ggmobileredux.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.ggmobileredux.room.TrackDao
-import com.example.ggmobileredux.room.TrackDatabase
+import com.example.ggmobileredux.database.TrackDao
+import com.example.ggmobileredux.database.TrackDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 @InstallIn(ApplicationComponent::class)
 @Module
-object RoomModule {
+object DatabaseModule {
 
     @Singleton
     @Provides

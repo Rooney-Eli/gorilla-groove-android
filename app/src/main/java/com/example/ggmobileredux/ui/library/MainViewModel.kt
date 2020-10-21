@@ -13,7 +13,7 @@ import androidx.lifecycle.*
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.repository.Sort
-import com.example.ggmobileredux.retrofit.LoginRequest
+import com.example.ggmobileredux.network.LoginRequest
 import com.example.ggmobileredux.service.EMPTY_PLAYBACK_STATE
 import com.example.ggmobileredux.service.MusicServiceConnection
 import com.example.ggmobileredux.util.DataState

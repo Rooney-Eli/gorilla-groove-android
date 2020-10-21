@@ -1,4 +1,4 @@
-package com.example.ggmobileredux.room
+package com.example.ggmobileredux.database
 
 import com.example.ggmobileredux.model.Track
 import javax.inject.Inject

@@ -1,4 +1,4 @@
-package com.example.ggmobileredux.room
+package com.example.ggmobileredux.database
 
 import androidx.room.Dao
 import androidx.room.Insert

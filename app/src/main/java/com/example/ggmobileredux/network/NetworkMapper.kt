@@ -1,4 +1,4 @@
-package com.example.ggmobileredux.retrofit
+package com.example.ggmobileredux.network
 
 import com.example.ggmobileredux.model.LoginResponse
 import com.example.ggmobileredux.model.Track

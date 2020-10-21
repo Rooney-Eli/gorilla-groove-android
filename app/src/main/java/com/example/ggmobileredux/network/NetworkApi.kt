@@ -1,11 +1,9 @@
-package com.example.ggmobileredux.retrofit
+package com.example.ggmobileredux.network
 
 import com.example.ggmobileredux.model.TrackWrapper
-import okhttp3.ResponseBody
-import retrofit2.Call
 import retrofit2.http.*
 
-interface TrackRetrofit {
+interface NetworkApi {
     @GET("/api/track?page=0&size=4000&sort=id,asc")
     suspend fun get(@Header("Authorization") token: String): TrackWrapper
 
