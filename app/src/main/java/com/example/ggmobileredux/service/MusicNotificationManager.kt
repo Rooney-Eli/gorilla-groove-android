@@ -50,6 +50,7 @@ class MusicNotificationManager(
         ).apply {
             setSmallIcon(R.drawable.ic_music)
             setMediaSessionToken(sessionToken)
+            setUseNavigationActionsInCompactView(true)
         }
     }
 

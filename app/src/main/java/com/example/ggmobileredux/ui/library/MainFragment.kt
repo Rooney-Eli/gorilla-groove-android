@@ -34,7 +34,6 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     lateinit var playlistAdapter: PlaylistAdapter
     var actionMode : ActionMode? = null
 
-    val client = OkHttpClient()
 
     @Inject
     lateinit var sharedPref: SharedPreferences
@@ -44,22 +43,15 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
 
+        val time = System.currentTimeMillis()
+
+        Log.d(TAG, "onViewCreated: ${System.currentTimeMillis()}")
+        
+
         Log.d(TAG, "onViewCreated: Retrieving tracks for recycler view from viewmodel...")
         viewModel.setLibraryEvent(LibraryEvent.GetAllTracksEvents)
         setupRecyclerView()
         subscribeObservers()
-
-
-
-//        client.dispatcher.executorService.shutdown()
-
-
-
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
     }
 
     private fun setupRecyclerView() = playlist_rv.apply {

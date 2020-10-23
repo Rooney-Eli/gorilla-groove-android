@@ -2,6 +2,8 @@ package com.example.ggmobileredux.ui.library
 
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.session.PlaybackStateCompat.*
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
@@ -96,6 +98,11 @@ class MainActivity : AppCompatActivity() {
         playpause_button.setOnClickListener {
             viewModel.playPause()
         }
+
+        repeat_button.setOnClickListener {
+            viewModel.repeat()
+        }
+
         audio_seek_bar.setOnSeekBarChangeListener(
             object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(
@@ -131,7 +138,29 @@ class MainActivity : AppCompatActivity() {
                 playpause_button.setImageResource(R.drawable.ic_play_arrow_24)
             }
 
+
+
         })
+
+
+        viewModel.repeatState.observe(this, Observer {
+            when(it) {
+                REPEAT_MODE_NONE -> {
+                    repeat_button.setImageResource(R.drawable.ic_repeat_24)
+                }
+                REPEAT_MODE_ONE -> {
+                    repeat_button.setImageResource(R.drawable.ic_repeat_one_24)
+                }
+                REPEAT_MODE_ALL -> {
+                    repeat_button.setImageResource(R.drawable.ic_repeat_black_24)
+                }
+                else -> {
+                    Log.d(TAG, "subscribeObservers: what is this? ${it}")
+                }
+            }
+        })
+
+
 
         viewModel.currentTrackItem.observe(this, Observer {
             now_playing_textview.text = it.description?.title

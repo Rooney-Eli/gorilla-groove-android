@@ -1,5 +1,6 @@
 package com.example.ggmobileredux.database
 
+import com.example.ggmobileredux.model.Playlist
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.model.User
 import javax.inject.Inject
@@ -7,6 +8,9 @@ import javax.inject.Inject
 class CacheMapper
 @Inject
 constructor() {
+
+    //Track
+
     fun mapFromTrackEntity(entity: TrackCacheEntity): Track {
         return Track(
             id = entity.id,
@@ -41,7 +45,7 @@ constructor() {
         return tracks.map { mapToTrackEntity(it) }
     }
 
-
+    //User
 
     fun mapFromUserEntity(entity: UserCacheEntity): User {
         return User(
@@ -66,6 +70,36 @@ constructor() {
 
     fun mapToUserEntityList(tracks: List<User>): List<UserCacheEntity> {
         return tracks.map { mapToUserEntity(it) }
+    }
+
+    //Playlist
+
+
+    fun mapFromPlaylistEntity(entity: PlaylistCacheEntity): Playlist {
+        return Playlist(
+            id = entity.id,
+            name = entity.name,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
+
+        )
+    }
+
+    fun mapToPlaylistEntity(domainModel: Playlist): PlaylistCacheEntity {
+        return PlaylistCacheEntity(
+            id = domainModel.id,
+            name = domainModel.name,
+            createdAt = domainModel.createdAt,
+            updatedAt = domainModel.updatedAt
+        )
+    }
+
+    fun mapFromPlaylistEntityList(entities: List<PlaylistCacheEntity>): List<Playlist> {
+        return entities.map { mapFromPlaylistEntity(it) }
+    }
+
+    fun mapToPlaylistEntityList(tracks: List<Playlist>): List<PlaylistCacheEntity> {
+        return tracks.map { mapToPlaylistEntity(it) }
     }
 
 

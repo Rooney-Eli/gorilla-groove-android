@@ -9,6 +9,7 @@ import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.network.*
 import com.example.ggmobileredux.database.CacheMapper
 import com.example.ggmobileredux.database.DatabaseDao
+import com.example.ggmobileredux.model.Playlist
 import com.example.ggmobileredux.model.User
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.KEY_USER_TOKEN
@@ -54,6 +55,7 @@ constructor(
     //glorified memory for lookups
     private val allTracks = LinkedHashMap<Int, Track>()
     private val allUsers = mutableListOf<User>()
+    private val allPlaylists = mutableListOf<Playlist>()
 
     init {
         initWebSocket()
@@ -86,6 +88,7 @@ constructor(
         }
 
         val mes = jsonObject.toString()
+        Log.d(TAG, "sendNowPlayingToServer: $mes")
         webSocket.send(mes)
     }
 
@@ -97,6 +100,7 @@ constructor(
         }
 
         val mes = jsonObject.toString()
+        Log.d(TAG, "sendStoppedPlayingToServer: $mes")
         webSocket.send(mes)
     }
 
@@ -160,25 +164,15 @@ constructor(
         return try {
             val links = networkApi.getTrackLink(userToken, id)
             val trackLink = links.trackLink
-            var artLink = links.albumArtLink
+            val artLink = links.albumArtLink
 
-            var isValid = false
-            runBlocking {
-                isValid = validateLink(links.albumArtLink.toString())
-            }
-
-            if(!isValid){
-                Log.d(TAG, "getTrackWithLink: Album art link is NOT valid!")
-                artLink = null
-
-            }
             lastVerifiedTrack = id
             lastFetchedLinks = TrackLinkResponse(trackLink, artLink)
-            return lastFetchedLinks
+            lastFetchedLinks
 
         } catch (e: Exception) {
             Log.d(TAG, "$e")
-            return TrackLinkResponse(" ", null)
+            TrackLinkResponse(" ", null)
         }
     }
 
@@ -364,6 +358,69 @@ constructor(
     private suspend fun fetchAllUsersFromNetwork() : List<User> {
         return try{
             networkMapper.mapFromUserEntityList(networkApi.getAllUsers(userToken))
+        } catch (e: Exception){
+            Log.d(TAG, "$e")
+            emptyList()
+        }
+    }
+
+
+    suspend fun getAllPlaylists(): Flow<DataState<*>> = flow {
+
+        if(!allPlaylists.isNullOrEmpty()){
+            Log.d(TAG, "getAllTracks: Retrieving playlists From sorted list in memory")
+            emit(DataState(allPlaylists, StateEvent.Success))
+
+            return@flow
+        }
+
+        //if in memory, emit the memory
+        if(!allPlaylists.isNullOrEmpty()) {
+            Log.d(TAG, "getAllTracks: Retrieving playlists From memory")
+            emit(DataState(allPlaylists, StateEvent.Success))
+
+            return@flow
+        }
+
+        emit(DataState(null, StateEvent.Loading))
+
+        //else in database, fetch db, cache to memory and emit memory
+        val localCollection = fetchAllPlaylistsFromDatabase()
+        if(!localCollection.isNullOrEmpty()) {
+            Log.d(TAG, "getAllplaylists: Retrieving playlists From database")
+            allPlaylists.clear()
+            localCollection.map {
+                allPlaylists.add(it)
+            }
+            emit(DataState(allPlaylists, StateEvent.Success))
+            return@flow
+        }
+
+        //else in network, fetch network, write to database and cache in memory, then emit memory
+        Log.d(TAG, "getAllplaylists: Retrieving playlists from network")
+        val remoteCollection = fetchAllPlaylistsFromNetwork()
+        if(!remoteCollection.isNullOrEmpty()) {
+            allPlaylists.clear()
+            remoteCollection.map {
+                databaseDao.insertPlaylist(cacheMapper.mapToPlaylistEntity(it))
+                allPlaylists.add(it)
+            }
+            emit(DataState(allPlaylists, StateEvent.Success))
+            return@flow
+        }
+
+        //else unable to retrieve data
+        emit(DataState(null, StateEvent.Error))
+    }
+
+
+    private suspend fun fetchAllPlaylistsFromDatabase() : List<Playlist> {
+        return cacheMapper.mapFromPlaylistEntityList(databaseDao.getAllPlaylists())
+    }
+
+    private suspend fun fetchAllPlaylistsFromNetwork() : List<Playlist> {
+        return try{
+            networkMapper.mapFromPlaylistEntityList(networkApi.getAllPlaylists(userToken))
         } catch (e: Exception){
             Log.d(TAG, "$e")
             emptyList()

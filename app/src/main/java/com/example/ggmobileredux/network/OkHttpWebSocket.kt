@@ -11,6 +11,7 @@ class OkHttpWebSocket : WebSocketListener() {
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
         super.onOpen(webSocket, response)
+        Log.d(TAG, "onOpen: ")
     }
 
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {

@@ -2,6 +2,7 @@ package com.example.ggmobileredux.service
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
@@ -95,6 +96,8 @@ class MusicService : MediaBrowserServiceCompat() {
         mediaSessionConnector.setPlayer(exoPlayer)
 
         exoPlayer.addListener(musicPlayerEventListener)
+
+
         musicNotificationManager.showNotification(exoPlayer)
     }
 
@@ -141,13 +144,16 @@ class MusicService : MediaBrowserServiceCompat() {
 
                     musicNotificationManager.hideNotification()
                 }
+
                 else -> {
                     musicNotificationManager.hideNotification()
                 }
+                
+                
             }
         }
         override fun onPlayerError(error: ExoPlaybackException) {
-            Log.d(TAG, "onPlayerError: A player error has occurred")
+            Log.d(TAG, "onPlayerError: A player error has occurred $error")
         }
 
         override fun onPositionDiscontinuity(reason: Int) {
@@ -170,7 +176,8 @@ class MusicService : MediaBrowserServiceCompat() {
                     PlaybackStateCompat.ACTION_PREPARE_FROM_SEARCH or
                     PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH or
                     PlaybackStateCompat.ACTION_PREPARE_FROM_URI or
-                    PlaybackStateCompat.ACTION_PLAY_FROM_URI
+                    PlaybackStateCompat.ACTION_PLAY_FROM_URI or
+                    PlaybackStateCompat.ACTION_SET_REPEAT_MODE
 
         override fun onPrepare(playWhenReady: Boolean) = Unit
         override fun onPrepareFromMediaId( mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
@@ -192,6 +199,9 @@ class MusicService : MediaBrowserServiceCompat() {
             extras: Bundle?,
             cb: ResultReceiver?
         ) = false
+
+
+
     }
 
 

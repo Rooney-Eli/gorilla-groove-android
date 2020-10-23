@@ -18,4 +18,8 @@ interface NetworkApi {
 
     @GET("api/user")
     suspend fun getAllUsers(@Header("Authorization") token: String ): List<UserNetworkEntity>
+
+    @GET("api/playlist")
+    suspend fun getAllPlaylists(@Header("Authorization") token: String): List<PlaylistNetworkEntity>
+
 }

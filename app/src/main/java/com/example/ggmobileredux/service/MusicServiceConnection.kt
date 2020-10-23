@@ -34,6 +34,9 @@ class MusicServiceConnection(context: Context, serviceComponent: ComponentName) 
     val playbackState = MutableLiveData<PlaybackStateCompat>()
         .apply { postValue(EMPTY_PLAYBACK_STATE) }
 
+    val repeatState = MutableLiveData<Int>()
+        .apply { postValue(PlaybackStateCompat.REPEAT_MODE_NONE) }
+
     val nowPlaying = MutableLiveData<MediaMetadataCompat>()
         .apply { postValue(NOTHING_PLAYING) }
 
@@ -80,6 +83,10 @@ class MusicServiceConnection(context: Context, serviceComponent: ComponentName) 
             playbackState.postValue(state ?: EMPTY_PLAYBACK_STATE)
         }
 
+        override fun onRepeatModeChanged(repeatMode: Int) {
+            repeatState.postValue(repeatMode)
+        }
+
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             nowPlaying.postValue(
                 if (metadata?.id == null) {
@@ -89,7 +96,6 @@ class MusicServiceConnection(context: Context, serviceComponent: ComponentName) 
                 }
             )
         }
-
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
         }
 

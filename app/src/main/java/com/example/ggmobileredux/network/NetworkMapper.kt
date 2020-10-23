@@ -1,6 +1,8 @@
 package com.example.ggmobileredux.network
 
+import com.example.ggmobileredux.database.PlaylistCacheEntity
 import com.example.ggmobileredux.model.LoginResponse
+import com.example.ggmobileredux.model.Playlist
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.model.User
 import javax.inject.Inject
@@ -9,6 +11,9 @@ import javax.inject.Inject
 class NetworkMapper
 @Inject
 constructor() {
+
+    //Track
+
     fun mapFromTrackEntity(entity: TrackNetworkEntity): Track {
         return Track(
             id = entity.id,
@@ -41,6 +46,8 @@ constructor() {
     }
 
 
+    //Login
+
     fun mapFromLoginEntity(entity: LoginResponseNetworkEntity): LoginResponse {
         return LoginResponse(
             id = entity.id,
@@ -58,6 +65,9 @@ constructor() {
             username = domainModel.username
         )
     }
+
+
+    //User
 
     fun mapFromUserEntity(entity: UserNetworkEntity): User {
         return User(
@@ -77,6 +87,32 @@ constructor() {
 
     fun mapFromUserEntityList(entities: List<UserNetworkEntity>): List<User> {
         return entities.map { mapFromUserEntity(it) }
+    }
+
+
+    //Playlist
+
+    fun mapFromPlaylistEntity(entity: PlaylistNetworkEntity): Playlist {
+        return Playlist(
+            id = entity.id,
+            name = entity.name,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
+
+        )
+    }
+
+    fun mapToPlaylistEntity(domainModel: Playlist): PlaylistNetworkEntity {
+        return PlaylistNetworkEntity(
+            id = domainModel.id,
+            name = domainModel.name,
+            createdAt = domainModel.createdAt,
+            updatedAt = domainModel.updatedAt
+        )
+    }
+
+    fun mapFromPlaylistEntityList(entities: List<PlaylistNetworkEntity>): List<Playlist> {
+        return entities.map { mapFromPlaylistEntity(it) }
     }
 
 

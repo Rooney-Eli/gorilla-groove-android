@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
+import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.model.User
 import com.example.ggmobileredux.repository.MainRepository
@@ -20,6 +21,7 @@ import com.example.ggmobileredux.service.MusicServiceConnection
 import com.example.ggmobileredux.util.DataState
 import com.example.ggmobileredux.util.SessionState
 import com.example.ggmobileredux.util.StateEvent
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -55,6 +57,10 @@ constructor(
     val users: LiveData<DataState<*>>
         get() = _users
 
+    private val _playlists: MutableLiveData<DataState<*>> = MutableLiveData()
+    val playlists: LiveData<DataState<*>>
+        get() = _playlists
+
     //Controls and Player Data
     private val _currentTrackItem: MutableLiveData<MediaMetadataCompat> = MutableLiveData()
     val currentTrackItem: LiveData<MediaMetadataCompat>
@@ -64,12 +70,34 @@ constructor(
     val playPauseState: LiveData<PlaybackStateCompat>
         get() = _playPauseState
 
+    private val _repeatState: MutableLiveData<Int> = MutableLiveData()
+    val repeatState: LiveData<Int>
+        get() = _repeatState
+
+
+
     val mediaPosition = MutableLiveData<Long>().apply {
         postValue(0L)
     }
 
 
-
+    @ExperimentalCoroutinesApi
+    fun setPlaylistsEvent(playlistsEvent: PlaylistsEvent<Nothing>) {
+        viewModelScope.launch {
+            when (playlistsEvent) {
+                is PlaylistsEvent.GetAllPlaylists -> {
+                    mainRepository.getAllPlaylists()
+                        .onEach {
+                            _playlists.value = it
+                        }
+                        .launchIn(viewModelScope)
+                }
+                is PlaylistsEvent.None -> {
+                    //ignored
+                }
+            }
+        }
+    }
 
 
     @ExperimentalCoroutinesApi
@@ -146,6 +174,11 @@ constructor(
         transportControls.playFromMediaId(track.id.toString(), null)
     }
 
+    fun repeatMedia() {
+        val transportControls = musicServiceConnection.transportControls
+        transportControls.setRepeatMode(REPEAT_MODE_ALL)
+    }
+
     private val playbackStateObserver = Observer<PlaybackStateCompat> { pbState ->
         val playbackState = pbState ?: EMPTY_PLAYBACK_STATE
 
@@ -166,6 +199,10 @@ constructor(
         }
     }
 
+    private val repeatStateObserver = Observer<Int> {
+        _repeatState.postValue(it)
+    }
+
     private val mediaMetadataObserver = Observer<MediaMetadataCompat> { mediaMetadataCompat ->
         _currentTrackItem.postValue(mediaMetadataCompat)
     }
@@ -174,6 +211,7 @@ constructor(
 
         it.playbackState.observeForever(playbackStateObserver)
         it.nowPlaying.observeForever(mediaMetadataObserver)
+        it.repeatState.observeForever(repeatStateObserver)
         checkPlaybackPosition()
     }
 
@@ -200,8 +238,27 @@ constructor(
         }
     }
 
+    fun repeat() {
+        musicServiceConnection.repeatState.value?.let {
+            when(it) {
+                REPEAT_MODE_NONE -> {
+                    musicServiceConnection.transportControls.setRepeatMode(REPEAT_MODE_ONE)
+                }
+                REPEAT_MODE_ONE -> {
+                    musicServiceConnection.transportControls.setRepeatMode(REPEAT_MODE_ALL)
+                }
+                else -> {
+                    musicServiceConnection.transportControls.setRepeatMode(REPEAT_MODE_NONE)
+                }
+            }
+
+        }
+    }
+
     fun skipTo(position: Long) {
         musicServiceConnection.transportControls.seekTo(position)
+
+
 
     }
 
@@ -210,11 +267,15 @@ constructor(
         super.onCleared()
         musicServiceConnection.playbackState.removeObserver(playbackStateObserver)
         musicServiceConnection.nowPlaying.removeObserver(mediaMetadataObserver)
+        musicServiceConnection.repeatState.removeObserver(repeatStateObserver)
         updatePosition = false
     }
 }
 
 private const val POSITION_UPDATE_INTERVAL_MILLIS = 1000L
+
+
+
 
 inline val PlaybackStateCompat.isPrepared
     get() = (state == PlaybackStateCompat.STATE_BUFFERING) ||
@@ -261,4 +322,9 @@ sealed class LibraryEvent<out R> {
 sealed class UsersEvent<Nothing> {
     object GetAllUsers: UsersEvent<Nothing>()
     object None: UsersEvent<Nothing>()
+}
+
+sealed class PlaylistsEvent<Nothing> {
+    object GetAllPlaylists: PlaylistsEvent<Nothing>()
+    object None: PlaylistsEvent<Nothing>()
 }

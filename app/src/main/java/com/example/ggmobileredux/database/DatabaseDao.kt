@@ -32,6 +32,14 @@ interface DatabaseDao {
     suspend fun getAllUsers(): List<UserCacheEntity>
 
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlaylist(playlistEntity: PlaylistCacheEntity): Long
+
+    @Query("SELECT * from playlists")
+    suspend fun getAllPlaylists(): List<PlaylistCacheEntity>
+
+
+
 
 
 
