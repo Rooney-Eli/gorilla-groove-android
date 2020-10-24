@@ -62,7 +62,7 @@ constructor(
     }
 
     //KEEP THESE IN SYNC WITH EACH OTHER
-    val concatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val concatenatingMediaSource = ConcatenatingMediaSource()//ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val metadataList = mutableListOf<MediaMetadataCompat>()
 
 

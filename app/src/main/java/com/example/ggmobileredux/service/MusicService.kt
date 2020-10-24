@@ -25,15 +25,13 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import javax.inject.Inject
+import kotlin.math.log
 
 
 private const val TAG = "AppDebug: Music Service"
 
 @AndroidEntryPoint
 class MusicService : MediaBrowserServiceCompat() {
-
-    @Inject
-    lateinit var dataSourceFactory: DefaultDataSourceFactory
 
     @Inject
     lateinit var exoPlayer: SimpleExoPlayer
@@ -47,13 +45,9 @@ class MusicService : MediaBrowserServiceCompat() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private lateinit var mediaSession: MediaSessionCompat
-    private lateinit var mediaSessionConnector: MediaSessionConnector //exoplayers
+    private lateinit var mediaSessionConnector: MediaSessionConnector
 
     var isForegroundService = false
-
-
-
-    private var isPlayerInitialized = false
 
     private val musicPlayerEventListener = PlayerEventListener()
     
@@ -63,7 +57,6 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     override fun onCreate() {
-        Log.d(TAG, "onCreate: Creating service...")
         super.onCreate()
 
         val activityIntent = packageManager?.getLaunchIntentForPackage(packageName)?.let {
@@ -86,10 +79,6 @@ class MusicService : MediaBrowserServiceCompat() {
             curSongDuration = exoPlayer.duration
         }
 
-//        serviceScope.launch {
-//            repo.readySources()
-//        }
-
         mediaSessionConnector = MediaSessionConnector(mediaSession)
         mediaSessionConnector.setPlaybackPreparer(MusicPlaybackPreparer())
         mediaSessionConnector.setQueueNavigator(MusicQueueNavigator())
@@ -97,31 +86,11 @@ class MusicService : MediaBrowserServiceCompat() {
 
         exoPlayer.addListener(musicPlayerEventListener)
 
-
         musicNotificationManager.showNotification(exoPlayer)
     }
 
     private inner class PlayerEventListener : Player.EventListener {
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-
-            /*
-              * The player does not have any media to play.
-                 int STATE_IDLE = 1;'
-
-               * The player is not able to immediately play from its current position. This state typically
-               * occurs when more data needs to be loaded.
-                  int STATE_BUFFERING = 2;
-
-               * The player is able to immediately play from its current position. The player will be playing if
-               * {@link #getPlayWhenReady()} is true, and paused otherwise.
-                  int STATE_READY = 3;
-
-               * The player has finished playing the media.
-                  int STATE_ENDED = 4;
-             */
-
-
-
 
             when (playbackState) {
                 Player.STATE_IDLE -> {
@@ -144,14 +113,12 @@ class MusicService : MediaBrowserServiceCompat() {
 
                     musicNotificationManager.hideNotification()
                 }
-
                 else -> {
                     musicNotificationManager.hideNotification()
                 }
-                
-                
             }
         }
+
         override fun onPlayerError(error: ExoPlaybackException) {
             Log.d(TAG, "onPlayerError: A player error has occurred $error")
         }
@@ -160,9 +127,26 @@ class MusicService : MediaBrowserServiceCompat() {
             super.onPositionDiscontinuity(reason)
             val sourceIndex: Int = exoPlayer.currentWindowIndex
 
+            when(reason) {
+                Player.DISCONTINUITY_REASON_PERIOD_TRANSITION -> {
+                    Log.d(TAG, "onPositionDiscontinuity: next track window")
+                }
+                Player.DISCONTINUITY_REASON_SEEK -> {
+                    Log.d(TAG, "onPositionDiscontinuity: track seeked")
+                }
+                Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT -> {
+                    Log.d(TAG, "onPositionDiscontinuity: unable to seek to location")
+                }
+                Player.DISCONTINUITY_REASON_INTERNAL -> {
+                    Log.d(TAG, "onPositionDiscontinuity: reason internal")
+                }
+                Player.DISCONTINUITY_REASON_AD_INSERTION -> {
+                    Log.d(TAG, "onPositionDiscontinuity: AD insertion...")
+                }
+            }
         }
-
     }
+
     private inner class MusicQueueNavigator : TimelineQueueNavigator(mediaSession) {
         override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat =
             repo.metadataList[windowIndex].description
@@ -181,6 +165,8 @@ class MusicService : MediaBrowserServiceCompat() {
 
         override fun onPrepare(playWhenReady: Boolean) = Unit
         override fun onPrepareFromMediaId( mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
+
+            //TODO: make work
 
             val itemToPlay: MediaMetadataCompat? = repo.metadataList.find { it.id == mediaId }
             preparePlayer(
@@ -211,11 +197,12 @@ class MusicService : MediaBrowserServiceCompat() {
         playWhenReady: Boolean
     ) {
         val initialWindowIndex = if (itemToPlay == null) 0 else repo.metadataList.indexOf(itemToPlay)
+
+        //exoPlayer.stop(true)
+        exoPlayer.setMediaSource(repo.concatenatingMediaSource)
+        exoPlayer.prepare() // triggers buffering
         exoPlayer.playWhenReady = playWhenReady
-        exoPlayer.stop(true)
-        exoPlayer.addMediaSource(repo.concatenatingMediaSource)
-        exoPlayer.prepare()
-        exoPlayer.seekTo(initialWindowIndex, 0)
+        exoPlayer.seekTo(initialWindowIndex, 0) //triggers seeked
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -231,22 +218,15 @@ class MusicService : MediaBrowserServiceCompat() {
         exoPlayer.release()
     }
 
-    override fun onGetRoot(
-        clientPackageName: String,
-        clientUid: Int,
-        rootHints: Bundle?
-    ): BrowserRoot? {
+    override fun onGetRoot( clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         return BrowserRoot(MEDIA_ROOT_ID, null)
     }
 
-    override fun onLoadChildren(
-        parentId: String,
-        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
-    ) {
+    override fun onLoadChildren( parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>> ) {
         when(parentId) {
             MEDIA_ROOT_ID -> {
-                        result.sendResult(null)
-                    }
-                }
+                result.sendResult(null)
+            }
+        }
     }
 }

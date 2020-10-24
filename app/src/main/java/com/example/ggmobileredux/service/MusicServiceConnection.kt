@@ -87,6 +87,8 @@ class MusicServiceConnection(context: Context, serviceComponent: ComponentName) 
             repeatState.postValue(repeatMode)
         }
 
+
+
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             nowPlaying.postValue(
                 if (metadata?.id == null) {
