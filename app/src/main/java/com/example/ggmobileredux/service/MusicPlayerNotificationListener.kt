@@ -7,7 +7,7 @@ import com.example.ggmobileredux.util.Constants.NOTIFICATION_ID
 import com.example.ggmobileredux.service.MusicService
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
 
-class MusicPlayerNotificationListener(
+class   MusicPlayerNotificationListener(
     private val musicService: MusicService
 ) : PlayerNotificationManager.NotificationListener {
 

@@ -11,6 +11,7 @@ import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.ui.library.MainViewModel
 import com.example.ggmobileredux.ui.library.PlaylistAdapter
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.android.synthetic.main.fragment_playing.*
@@ -47,7 +48,7 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
 
     override fun onTrackClick(position: Int) {
         Log.d(TAG, "onTrackClick: ${trackListAdapter.trackList[position]}")
-        viewModel.playMedia(trackListAdapter.trackList[position])
+        viewModel.playMedia(trackListAdapter.trackList[position], CALLING_FRAGMENT_NOW_PLAYING)
     }
 
     override fun onTrackLongClick(position: Int): Boolean {

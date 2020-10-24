@@ -14,7 +14,7 @@
     </fragment>
     <fragment
         android:id="@+id/mainFragment"
-        android:name="com.example.ggmobileredux.ui.library.MainFragment"
+        android:name="com.example.ggmobileredux.ui.library.LibraryFragment"
         android:label="MainFragment" >
         <action
             android:id="@+id/action_mainFragment_to_loginFragment"

@@ -1,5 +1,6 @@
 package com.example.ggmobileredux.ui.library
 
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -18,6 +19,8 @@ import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.network.LoginRequest
 import com.example.ggmobileredux.service.EMPTY_PLAYBACK_STATE
 import com.example.ggmobileredux.service.MusicServiceConnection
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
+import com.example.ggmobileredux.util.Constants.KEY_CALLING_FRAGMENT
 import com.example.ggmobileredux.util.DataState
 import com.example.ggmobileredux.util.SessionState
 import com.example.ggmobileredux.util.StateEvent
@@ -161,7 +164,8 @@ constructor(
 
     fun setNowPlayingTracks(trackIds: List<Int> ) {
         mainRepository.setNowPlayingTracks(trackIds)
-        _nowPlayingTracks.value = mainRepository.fetchNowPlayingTracks().also { playMedia(it[0]) }
+        _nowPlayingTracks.value = mainRepository.fetchNowPlayingTracks()
+            //.also { playMedia(it[0], CALLING_FRAGMENT_NOW_PLAYING) }
     }
 
     fun sortTracks(sort: Sort) {
@@ -169,9 +173,12 @@ constructor(
         _libraryTracks.value = DataState(mainRepository.sortedTrackList, StateEvent.Success)
     }
 
-    fun playMedia(track: Track) {
+    fun playMedia(track: Track, callingFragment: String) {
         val transportControls = musicServiceConnection.transportControls
-        transportControls.playFromMediaId(track.id.toString(), null)
+
+        val extras = Bundle().also { it.putString(KEY_CALLING_FRAGMENT, callingFragment) }
+
+        transportControls.playFromMediaId(track.id.toString(), extras)
     }
 
     fun repeatMedia() {

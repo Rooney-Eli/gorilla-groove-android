@@ -2,7 +2,6 @@ package com.example.ggmobileredux.service
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
@@ -14,6 +13,9 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media.MediaBrowserServiceCompat
 import com.example.ggmobileredux.repository.MainRepository
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
+import com.example.ggmobileredux.util.Constants.KEY_CALLING_FRAGMENT
 import com.example.ggmobileredux.util.Constants.MEDIA_ROOT_ID
 import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.ExoPlaybackException
@@ -21,11 +23,10 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import javax.inject.Inject
-import kotlin.math.log
 
 
 private const val TAG = "AppDebug: Music Service"
@@ -48,6 +49,8 @@ class MusicService : MediaBrowserServiceCompat() {
     private lateinit var mediaSessionConnector: MediaSessionConnector
 
     var isForegroundService = false
+
+    var activeSource: String? = null
 
     private val musicPlayerEventListener = PlayerEventListener()
     
@@ -149,7 +152,13 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private inner class MusicQueueNavigator : TimelineQueueNavigator(mediaSession) {
         override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat =
-            repo.metadataList[windowIndex].description
+            when(activeSource){
+                CALLING_FRAGMENT_LIBRARY -> repo.libraryMetadataList[windowIndex].description
+                CALLING_FRAGMENT_NOW_PLAYING -> repo.nowPlayingMetadataList[windowIndex].description
+                else -> repo.libraryMetadataList[windowIndex].description
+            }
+
+
     }
 
     private inner class MusicPlaybackPreparer : MediaSessionConnector.PlaybackPreparer {
@@ -166,15 +175,30 @@ class MusicService : MediaBrowserServiceCompat() {
         override fun onPrepare(playWhenReady: Boolean) = Unit
         override fun onPrepareFromMediaId( mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
 
-            //TODO: make work
+            when(extras?.getString(KEY_CALLING_FRAGMENT)) {
+                CALLING_FRAGMENT_LIBRARY -> {
+                    val itemToPlay = repo.libraryMetadataList.find { it.id == mediaId }
+                    val songIndex = if (itemToPlay == null) 0 else repo.libraryMetadataList.indexOf(itemToPlay)
 
-            val itemToPlay: MediaMetadataCompat? = repo.metadataList.find { it.id == mediaId }
-            preparePlayer(
-                itemToPlay,
-                playWhenReady
-            )
+                    if(activeSource == CALLING_FRAGMENT_LIBRARY) {
+                        exoPlayer.seekTo(songIndex, 0)
+                    } else {
+                        activeSource = CALLING_FRAGMENT_LIBRARY
+                        preparePlayer(repo.libraryConcatenatingMediaSource, songIndex, true)
+                    }
+                }
+                CALLING_FRAGMENT_NOW_PLAYING -> {
+                    val itemToPlay = repo.nowPlayingMetadataList.find { it.id == mediaId }
+                    val songIndex = if (itemToPlay == null) 0 else repo.nowPlayingMetadataList.indexOf(itemToPlay)
 
-
+                    if(activeSource == CALLING_FRAGMENT_NOW_PLAYING) {
+                        exoPlayer.seekTo(songIndex, 0)
+                    } else {
+                        activeSource = CALLING_FRAGMENT_NOW_PLAYING
+                        preparePlayer(repo.nowPlayingConcatenatingMediaSource, songIndex, true)
+                    }
+                }
+            }
         }
         override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) = Unit
         override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle?) = Unit
@@ -185,24 +209,18 @@ class MusicService : MediaBrowserServiceCompat() {
             extras: Bundle?,
             cb: ResultReceiver?
         ) = false
-
-
-
     }
 
-
-
     private fun preparePlayer(
-        itemToPlay: MediaMetadataCompat?,
+        concatSource: ConcatenatingMediaSource,
+        songIndex: Int,
         playWhenReady: Boolean
     ) {
-        val initialWindowIndex = if (itemToPlay == null) 0 else repo.metadataList.indexOf(itemToPlay)
-
-        //exoPlayer.stop(true)
-        exoPlayer.setMediaSource(repo.concatenatingMediaSource)
+        exoPlayer.stop(true)
+        exoPlayer.setMediaSource(concatSource)
         exoPlayer.prepare() // triggers buffering
         exoPlayer.playWhenReady = playWhenReady
-        exoPlayer.seekTo(initialWindowIndex, 0) //triggers seeked
+        exoPlayer.seekTo(songIndex, 0) //triggers seeked
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {

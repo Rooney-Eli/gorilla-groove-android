@@ -23,7 +23,6 @@ import com.example.ggmobileredux.util.StateEvent
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.source.ShuffleOrder
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.ResolvingDataSource
@@ -62,8 +61,12 @@ constructor(
     }
 
     //KEEP THESE IN SYNC WITH EACH OTHER
-    val concatenatingMediaSource = ConcatenatingMediaSource()//ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
-    val metadataList = mutableListOf<MediaMetadataCompat>()
+    val libraryConcatenatingMediaSource = ConcatenatingMediaSource()//ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val libraryMetadataList = mutableListOf<MediaMetadataCompat>()
+
+    val nowPlayingConcatenatingMediaSource = ConcatenatingMediaSource()
+    val nowPlayingMetadataList = mutableListOf<MediaMetadataCompat>()
+
 
 
     val sortedTrackList = mutableListOf<Track>()
@@ -75,8 +78,10 @@ constructor(
 
     fun setNowPlayingTracks(trackIds: List<Int>) {
         nowPlayingTracks.clear()
-        trackIds.map { nowPlayingTracks.add(allTracks[it]!!) }
-        readySources(nowPlayingTracks)
+        trackIds.map {
+            nowPlayingTracks.add(allTracks[it]!!)
+        }
+        readyNowPlayingSources(nowPlayingTracks)
     }
 
 
@@ -114,7 +119,7 @@ constructor(
             Sort.OLDEST -> sortedTrackList.sortBy { it.addedToLibrary }
         }
 
-        readySources(sortedTrackList)
+        readyLibrarySources(sortedTrackList)
     }
 
 
@@ -176,12 +181,21 @@ constructor(
         }
     }
 
-    fun readySources(playlist: List<Track>) {
-        concatenatingMediaSource.clear()
-        metadataList.clear()
+    private fun readyLibrarySources(playlist: List<Track>) {
+        libraryConcatenatingMediaSource.clear()
+        libraryMetadataList.clear()
         playlist.forEach{
-            concatenatingMediaSource.addCustomMediaSource(it)
-            metadataList.add(it.toMediaMetadataItem())
+            libraryConcatenatingMediaSource.addCustomMediaSource(it)
+            libraryMetadataList.add(it.toMediaMetadataItem())
+        }
+    }
+
+    private fun readyNowPlayingSources(playlist: List<Track>) {
+        nowPlayingConcatenatingMediaSource.clear()
+        nowPlayingMetadataList.clear()
+        playlist.forEach{
+            nowPlayingConcatenatingMediaSource.addCustomMediaSource(it)
+            nowPlayingMetadataList.add(it.toMediaMetadataItem())
         }
     }
 
@@ -215,7 +229,7 @@ constructor(
             }
             sortedTrackList.clear()
             sortedTrackList.addAll(localCollection)
-            readySources(sortedTrackList)
+            readyLibrarySources(sortedTrackList)
             emit(DataState(allTracks.values.toList(), StateEvent.Success))
             return@flow
         }
@@ -230,7 +244,7 @@ constructor(
             }
             sortedTrackList.clear()
             sortedTrackList.addAll(remoteCollection)
-            readySources(sortedTrackList)
+            readyLibrarySources(sortedTrackList)
             emit(DataState(allTracks.values.toList(), StateEvent.Success))
             return@flow
         }

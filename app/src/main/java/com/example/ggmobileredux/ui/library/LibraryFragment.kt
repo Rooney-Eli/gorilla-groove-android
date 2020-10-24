@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.Sort
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
 import com.example.ggmobileredux.util.Constants.SORT_BY_DATE_ADDED_NEWEST
@@ -23,12 +24,11 @@ import com.example.ggmobileredux.util.StateEvent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackListener {
+class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackListener {
     val TAG = "AppDebug"
     private val viewModel: MainViewModel by viewModels()
     lateinit var playlistAdapter: PlaylistAdapter
@@ -55,7 +55,7 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     }
 
     private fun setupRecyclerView() = playlist_rv.apply {
-        playlistAdapter = PlaylistAdapter(this@MainFragment)
+        playlistAdapter = PlaylistAdapter(this@LibraryFragment)
         adapter = playlistAdapter
         layoutManager = LinearLayoutManager(requireContext())
     }
@@ -154,7 +154,7 @@ class MainFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackL
     override fun onTrackClick(position: Int) {
         val clickedTrack = playlistAdapter.filteredList[position]
         Log.d(TAG, "onTrackClick: $clickedTrack")
-        viewModel.playMedia(clickedTrack)
+        viewModel.playMedia(clickedTrack, CALLING_FRAGMENT_LIBRARY)
     }
 
     override fun onTrackLongClick(position: Int): Boolean {
