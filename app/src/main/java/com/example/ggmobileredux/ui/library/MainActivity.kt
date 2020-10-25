@@ -127,6 +127,7 @@ class MainActivity : AppCompatActivity() {
     private fun initProgressBar() {
         audio_seek_bar.min = 0
         audio_seek_bar.max = 100
+        //audio_seek_bar.
         //audio_progress_bar.progress = 50
     }
 
@@ -173,6 +174,12 @@ class MainActivity : AppCompatActivity() {
         viewModel.mediaPosition.observe(this, Observer {
             track_position_textview.text = it?.getSongTimeFromMilliseconds() ?: "0"
             audio_seek_bar.progress = (it?.toInt() ?: 0) / 1000
+            Log.d(TAG, "subscribeObservers: $it")
+        })
+        
+        viewModel.bufferPosition.observe(this, Observer {
+            audio_seek_bar.secondaryProgress = (it?.toInt() ?: 0) / 1000
+            Log.d(TAG, "subscribeObservers: $it")
         })
 
     }

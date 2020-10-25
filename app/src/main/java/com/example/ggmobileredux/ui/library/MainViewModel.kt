@@ -83,6 +83,10 @@ constructor(
         postValue(0L)
     }
 
+    val bufferPosition = MutableLiveData<Long>().apply {
+        postValue(0L)
+    }
+
 
     @ExperimentalCoroutinesApi
     fun setPlaylistsEvent(playlistsEvent: PlaylistsEvent<Nothing>) {
@@ -220,15 +224,28 @@ constructor(
         it.nowPlaying.observeForever(mediaMetadataObserver)
         it.repeatState.observeForever(repeatStateObserver)
         checkPlaybackPosition()
+        checkBufferPosition()
     }
 
     private fun checkPlaybackPosition(): Boolean = handler.postDelayed({
         val currPosition = _playPauseState.value?.currentPlayBackPosition
+
         if (mediaPosition.value != currPosition)
             mediaPosition.postValue(currPosition)
+
         if (updatePosition)
             checkPlaybackPosition()
     }, POSITION_UPDATE_INTERVAL_MILLIS)
+
+    private fun checkBufferPosition(): Boolean = handler.postDelayed({
+        val buffPosition = _playPauseState.value?.bufferedPosition
+        if(bufferPosition.value != buffPosition){
+            bufferPosition.postValue(buffPosition)
+        }
+        if (updatePosition)
+            checkBufferPosition()
+    }, POSITION_UPDATE_INTERVAL_MILLIS)
+
 
     fun playPause() {
         musicServiceConnection.playbackState.value?.let {
@@ -279,7 +296,7 @@ constructor(
     }
 }
 
-private const val POSITION_UPDATE_INTERVAL_MILLIS = 1000L
+private const val POSITION_UPDATE_INTERVAL_MILLIS = 500L
 
 
 

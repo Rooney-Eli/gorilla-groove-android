@@ -3,6 +3,7 @@ package com.example.ggmobileredux.di
 import android.content.Context
 import com.example.ggmobileredux.repository.MainRepository
 import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
@@ -35,7 +36,9 @@ object ServiceModule {
     fun provideExoPlayer(
         @ApplicationContext context: Context,
         audioAttributes: AudioAttributes
-    ) = SimpleExoPlayer.Builder(context).build().apply {
+    ) = SimpleExoPlayer.Builder(context)
+        .setLoadControl(DefaultLoadControl())
+        .build().apply {
         setAudioAttributes(audioAttributes, true)
         setHandleAudioBecomingNoisy(true)
     }
