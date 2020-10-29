@@ -1,10 +1,10 @@
 package com.example.ggmobileredux.network
 
-import com.example.ggmobileredux.database.PlaylistCacheEntity
-import com.example.ggmobileredux.model.LoginResponse
-import com.example.ggmobileredux.model.Playlist
-import com.example.ggmobileredux.model.Track
-import com.example.ggmobileredux.model.User
+import com.example.ggmobileredux.model.*
+import com.example.ggmobileredux.network.login.LoginResponseNetworkEntity
+import com.example.ggmobileredux.network.playlist.PlaylistKeyNetworkEntity
+import com.example.ggmobileredux.network.playlist.PlaylistItemNetworkEntity
+import com.example.ggmobileredux.network.track.TrackNetworkEntity
 import javax.inject.Inject
 
 
@@ -90,10 +90,10 @@ constructor() {
     }
 
 
-    //Playlist
+    //Playlist Key
 
-    fun mapFromPlaylistEntity(entity: PlaylistNetworkEntity): Playlist {
-        return Playlist(
+    fun mapFromPlaylistKeyEntity(entity: PlaylistKeyNetworkEntity): PlaylistKey {
+        return PlaylistKey(
             id = entity.id,
             name = entity.name,
             createdAt = entity.createdAt,
@@ -102,8 +102,8 @@ constructor() {
         )
     }
 
-    fun mapToPlaylistEntity(domainModel: Playlist): PlaylistNetworkEntity {
-        return PlaylistNetworkEntity(
+    fun mapToPlaylistKeyEntity(domainModel: PlaylistKey): PlaylistKeyNetworkEntity {
+        return PlaylistKeyNetworkEntity(
             id = domainModel.id,
             name = domainModel.name,
             createdAt = domainModel.createdAt,
@@ -111,9 +111,38 @@ constructor() {
         )
     }
 
-    fun mapFromPlaylistEntityList(entities: List<PlaylistNetworkEntity>): List<Playlist> {
+    fun mapFromPlaylistKeyEntityList(entities: List<PlaylistKeyNetworkEntity>): List<PlaylistKey> {
+        return entities.map { mapFromPlaylistKeyEntity(it) }
+    }
+
+
+
+    //Playlist content
+
+    fun mapFromPlaylistEntity(entity: PlaylistItemNetworkEntity): PlaylistItem {
+        return PlaylistItem(
+            id = entity.id,
+            track = mapFromTrackEntity(entity.track),
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
+
+        )
+    }
+
+    fun mapToPlaylistEntity(domainModel: PlaylistItem): PlaylistItemNetworkEntity {
+        return PlaylistItemNetworkEntity(
+            id = domainModel.id,
+            track = mapToTrackEntity(domainModel.track),
+            createdAt = domainModel.createdAt,
+            updatedAt = domainModel.updatedAt
+        )
+    }
+
+    fun mapFromPlaylistEntityList(entities: List<PlaylistItemNetworkEntity>): List<PlaylistItem> {
         return entities.map { mapFromPlaylistEntity(it) }
     }
+
+
 
 
 }

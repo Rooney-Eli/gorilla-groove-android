@@ -8,12 +8,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
-import com.example.ggmobileredux.model.Track
-import com.example.ggmobileredux.ui.library.MainViewModel
+import com.example.ggmobileredux.ui.PlayerControlsViewModel
+import com.example.ggmobileredux.ui.MainViewModel
 import com.example.ggmobileredux.ui.library.PlaylistAdapter
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.android.synthetic.main.fragment_playing.*
 
 @AndroidEntryPoint
@@ -21,8 +20,9 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
     private val TAG = "AppDebug: Now Playing: "
 
     private val viewModel: MainViewModel by viewModels()
+    private val playerControlsViewModel: PlayerControlsViewModel by viewModels()
 
-    lateinit var trackListAdapter: PlaylistAdapter
+    private lateinit var trackListAdapter: PlaylistAdapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -48,7 +48,7 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
 
     override fun onTrackClick(position: Int) {
         Log.d(TAG, "onTrackClick: ${trackListAdapter.trackList[position]}")
-        viewModel.playMedia(trackListAdapter.trackList[position], CALLING_FRAGMENT_NOW_PLAYING)
+        playerControlsViewModel.playMedia(trackListAdapter.trackList[position], CALLING_FRAGMENT_NOW_PLAYING)
     }
 
     override fun onTrackLongClick(position: Int): Boolean {

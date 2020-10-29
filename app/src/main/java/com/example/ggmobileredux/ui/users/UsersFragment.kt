@@ -9,14 +9,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
-import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.model.User
-import com.example.ggmobileredux.ui.library.MainViewModel
-import com.example.ggmobileredux.ui.library.PlaylistAdapter
-import com.example.ggmobileredux.ui.library.UsersEvent
+import com.example.ggmobileredux.ui.MainViewModel
+import com.example.ggmobileredux.ui.UsersEvent
 import com.example.ggmobileredux.util.StateEvent
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.android.synthetic.main.fragment_users.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 

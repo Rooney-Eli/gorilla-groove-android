@@ -4,25 +4,26 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Playlist
+import com.example.ggmobileredux.model.PlaylistKey
 import kotlinx.android.synthetic.main.playlists_info_item.view.*
 import java.util.*
 
-class PlaylistAdapter(
-    private val listener: OnPlaylistListener
-) : RecyclerView.Adapter<PlaylistAdapter.PlaylistViewHolder>(), Filterable{
+const val TAG = "AppDebug"
 
-    var playlistList = listOf<Playlist>()
+class PlaylistKeyAdapter(
+    private val playlistKeyListener: OnPlaylistListener
+) : RecyclerView.Adapter<PlaylistKeyAdapter.PlaylistViewHolder>(), Filterable {
 
+    var playlistKeyList = mutableListOf<PlaylistKey>()
 
-    fun submitList(playlists: List<Playlist>) {
-        playlistList = playlists
+    fun submitPlaylistMap(playlistKeys: List<PlaylistKey>) {
+        playlistKeyList.addAll(playlistKeys)
         notifyDataSetChanged()
-
     }
-
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(
@@ -31,18 +32,14 @@ class PlaylistAdapter(
         return PlaylistViewHolder(itemView)
     }
 
-    override fun getItemCount() = playlistList.size
+    override fun getItemCount() = playlistKeyList.size
 
     override fun onBindViewHolder(holder: PlaylistViewHolder, position: Int) {
-        val currentPlaylist = playlistList[position]
-        holder.tvPlaylistName.text = currentPlaylist.name
-
+        holder.playlistName.text = playlistKeyList[position].name
     }
 
     inner class PlaylistViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
-        val tvPlaylistName: TextView = itemView.playlist_name
-
-
+        val playlistName: TextView = itemView.playlist_name
         init {
             itemView.setOnClickListener(this)
             itemView.setOnLongClickListener(this)
@@ -53,14 +50,15 @@ class PlaylistAdapter(
 
             //in event of animation
             if(position != RecyclerView.NO_POSITION) {
-                listener.onPlaylistClick(position)
+                playlistKeyListener.onPlaylistClick(position)
+
             }
         }
 
         override fun onLongClick(v: View?): Boolean {
             val position = adapterPosition
             if(position != RecyclerView.NO_POSITION) {
-                listener.onPlaylistLongClick(position)
+                playlistKeyListener.onPlaylistLongClick(position)
             }
             return true
         }
@@ -68,13 +66,14 @@ class PlaylistAdapter(
 
     override fun getFilter(): Filter {
         return object : Filter() {
+
             override fun performFiltering(constraint: CharSequence?): FilterResults {
-                val resultsList : List<Playlist> =
+                val resultsList : List<PlaylistKey> =
                 if (constraint.isNullOrEmpty()) {
-                    playlistList
+                    playlistKeyList
                 } else {
                     val filterPattern = constraint.toString().toLowerCase(Locale.ROOT).trim()
-                    playlistList.filter {
+                    playlistKeyList.filter {
                         it.name.toLowerCase(Locale.ROOT).contains(filterPattern)
                     }
                 }

@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 data class TrackCacheEntity(
     //PK set to false so I can use GG backend id key
     @PrimaryKey(autoGenerate = false)
-    @ColumnInfo(name = "id")
+    @ColumnInfo(name = "trackId")
     var id: Int,
 
     @ColumnInfo(name = "name")

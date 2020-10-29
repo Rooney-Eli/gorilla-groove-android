@@ -1,6 +1,6 @@
 package com.example.ggmobileredux.database
 
-import com.example.ggmobileredux.model.Playlist
+import com.example.ggmobileredux.model.PlaylistKey
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.model.User
 import javax.inject.Inject
@@ -75,8 +75,8 @@ constructor() {
     //Playlist
 
 
-    fun mapFromPlaylistEntity(entity: PlaylistCacheEntity): Playlist {
-        return Playlist(
+    fun mapFromPlaylistEntity(entity: PlaylistKeyCacheEntity): PlaylistKey {
+        return PlaylistKey(
             id = entity.id,
             name = entity.name,
             createdAt = entity.createdAt,
@@ -85,8 +85,8 @@ constructor() {
         )
     }
 
-    fun mapToPlaylistEntity(domainModel: Playlist): PlaylistCacheEntity {
-        return PlaylistCacheEntity(
+    fun mapToPlaylistEntity(domainModel: PlaylistKey): PlaylistKeyCacheEntity {
+        return PlaylistKeyCacheEntity(
             id = domainModel.id,
             name = domainModel.name,
             createdAt = domainModel.createdAt,
@@ -94,11 +94,11 @@ constructor() {
         )
     }
 
-    fun mapFromPlaylistEntityList(entities: List<PlaylistCacheEntity>): List<Playlist> {
+    fun mapFromPlaylistEntityList(entities: List<PlaylistKeyCacheEntity>): List<PlaylistKey> {
         return entities.map { mapFromPlaylistEntity(it) }
     }
 
-    fun mapToPlaylistEntityList(tracks: List<Playlist>): List<PlaylistCacheEntity> {
+    fun mapToPlaylistEntityList(tracks: List<PlaylistKey>): List<PlaylistKeyCacheEntity> {
         return tracks.map { mapToPlaylistEntity(it) }
     }
 

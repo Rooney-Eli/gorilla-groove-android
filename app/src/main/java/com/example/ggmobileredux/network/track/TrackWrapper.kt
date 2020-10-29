@@ -1,6 +1,5 @@
-package com.example.ggmobileredux.model
+package com.example.ggmobileredux.network.track
 
-import com.example.ggmobileredux.network.TrackNetworkEntity
 import com.google.gson.annotations.SerializedName
 
 

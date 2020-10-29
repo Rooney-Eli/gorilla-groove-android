@@ -1,4 +1,4 @@
-package com.example.ggmobileredux.network
+package com.example.ggmobileredux.network.login
 
 data class LoginResponseNetworkEntity(
     var id: Int,

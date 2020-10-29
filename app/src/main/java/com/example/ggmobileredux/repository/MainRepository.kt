@@ -5,12 +5,12 @@ import android.net.Uri
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.util.Log
-import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.network.*
 import com.example.ggmobileredux.database.CacheMapper
 import com.example.ggmobileredux.database.DatabaseDao
-import com.example.ggmobileredux.model.Playlist
-import com.example.ggmobileredux.model.User
+import com.example.ggmobileredux.model.*
+import com.example.ggmobileredux.network.login.LoginRequest
+import com.example.ggmobileredux.network.track.TrackLinkResponse
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.KEY_USER_TOKEN
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
@@ -23,6 +23,7 @@ import com.example.ggmobileredux.util.StateEvent
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
+import com.google.android.exoplayer2.source.ShuffleOrder
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.ResolvingDataSource
@@ -33,8 +34,7 @@ import okhttp3.*
 import org.json.JSONObject
 
 
-class MainRepository
-constructor(
+class MainRepository (
     private val databaseDao: DatabaseDao,
     private val networkApi: NetworkApi,
     private val cacheMapper: CacheMapper,
@@ -54,20 +54,22 @@ constructor(
     //glorified memory for lookups
     private val allTracks = LinkedHashMap<Int, Track>()
     private val allUsers = mutableListOf<User>()
-    private val allPlaylists = mutableListOf<Playlist>()
+    private val allPlaylistKeys = mutableListOf<PlaylistKey>()
 
     init {
         initWebSocket()
+
     }
 
     //KEEP THESE IN SYNC WITH EACH OTHER
-    val libraryConcatenatingMediaSource = ConcatenatingMediaSource()//ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val libraryConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val libraryMetadataList = mutableListOf<MediaMetadataCompat>()
 
-    val nowPlayingConcatenatingMediaSource = ConcatenatingMediaSource()
+    val nowPlayingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val nowPlayingMetadataList = mutableListOf<MediaMetadataCompat>()
 
-
+    val playlistConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val playlistMetadataList = mutableListOf<MediaMetadataCompat>()
 
     val sortedTrackList = mutableListOf<Track>()
     private val nowPlayingTracks = mutableListOf<Track>()
@@ -83,7 +85,6 @@ constructor(
         }
         readyNowPlayingSources(nowPlayingTracks)
     }
-
 
     fun sendNowPlayingToServer(track: MediaDescriptionCompat) {
         val jsonObject = JSONObject().apply {
@@ -157,8 +158,8 @@ constructor(
         this.addMediaSource(progressiveMediaSource.createMediaSource(track.toMediaItem()))
     }
 
-    var lastVerifiedTrack: Int? = null
-    lateinit var lastFetchedLinks: TrackLinkResponse
+    private var lastVerifiedTrack: Int? = null
+    private lateinit var lastFetchedLinks: TrackLinkResponse
 
     suspend fun getTrackLinks(id: Int) : TrackLinkResponse {
 
@@ -166,13 +167,18 @@ constructor(
             return lastFetchedLinks
         }
 
+        //TODO: reposition trycatch
         return try {
             val links = networkApi.getTrackLink(userToken, id)
             val trackLink = links.trackLink
             val artLink = links.albumArtLink
 
             lastVerifiedTrack = id
-            lastFetchedLinks = TrackLinkResponse(trackLink, artLink)
+            lastFetchedLinks =
+                TrackLinkResponse(
+                    trackLink,
+                    artLink
+                )
             lastFetchedLinks
 
         } catch (e: Exception) {
@@ -184,7 +190,7 @@ constructor(
     private fun readyLibrarySources(playlist: List<Track>) {
         libraryConcatenatingMediaSource.clear()
         libraryMetadataList.clear()
-        playlist.forEach{
+        playlist.map{
             libraryConcatenatingMediaSource.addCustomMediaSource(it)
             libraryMetadataList.add(it.toMediaMetadataItem())
         }
@@ -199,8 +205,17 @@ constructor(
         }
     }
 
+    private fun readyPlaylistSources(playlist: List<Track>) {
+        playlistConcatenatingMediaSource.clear()
+        playlistMetadataList.clear()
+        playlist.forEach{
+            playlistConcatenatingMediaSource.addCustomMediaSource(it)
+            playlistMetadataList.add(it.toMediaMetadataItem())
+        }
+    }
 
-    suspend fun getAllTracks(): Flow<DataState<*>> = flow {
+
+    suspend fun getAllTracks(): Flow<DataState<out List<Track>>> = flow {
 
         if(!sortedTrackList.isNullOrEmpty()){
             Log.d(TAG, "getAllTracks: Retrieving Tracks From sorted list in memory")
@@ -316,7 +331,7 @@ constructor(
 
 
 
-    suspend fun getAllUsers(): Flow<DataState<*>> = flow {
+    suspend fun getAllUsers(): Flow<DataState<out List<User>>> = flow {
 
         if(!allUsers.isNullOrEmpty()){
             Log.d(TAG, "getAllTracks: Retrieving Users From sorted list in memory")
@@ -364,7 +379,6 @@ constructor(
         emit(DataState(null, StateEvent.Error))
     }
 
-
     private suspend fun fetchAllUsersFromDatabase() : List<User> {
         return cacheMapper.mapFromUserEntityList(databaseDao.getAllUsers())
     }
@@ -379,19 +393,13 @@ constructor(
     }
 
 
-    suspend fun getAllPlaylists(): Flow<DataState<*>> = flow {
+    private val allPlaylistsMap = mutableMapOf<PlaylistKey, Playlist>()
 
-        if(!allPlaylists.isNullOrEmpty()){
-            Log.d(TAG, "getAllTracks: Retrieving playlists From sorted list in memory")
-            emit(DataState(allPlaylists, StateEvent.Success))
+    suspend fun getAllPlaylistKeys(): Flow<DataState<out Map<PlaylistKey, Playlist>>> = flow {
 
-            return@flow
-        }
-
-        //if in memory, emit the memory
-        if(!allPlaylists.isNullOrEmpty()) {
-            Log.d(TAG, "getAllTracks: Retrieving playlists From memory")
-            emit(DataState(allPlaylists, StateEvent.Success))
+        if(!allPlaylistsMap.isNullOrEmpty()){
+            Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists From sorted list in memory")
+            emit(DataState(allPlaylistsMap, StateEvent.Success))
 
             return@flow
         }
@@ -399,27 +407,28 @@ constructor(
         emit(DataState(null, StateEvent.Loading))
 
         //else in database, fetch db, cache to memory and emit memory
-        val localCollection = fetchAllPlaylistsFromDatabase()
-        if(!localCollection.isNullOrEmpty()) {
-            Log.d(TAG, "getAllplaylists: Retrieving playlists From database")
-            allPlaylists.clear()
-            localCollection.map {
-                allPlaylists.add(it)
-            }
-            emit(DataState(allPlaylists, StateEvent.Success))
-            return@flow
-        }
+//        val localCollection = fetchAllPlaylistKeysFromDatabase()
+//        if(!localCollection.isNullOrEmpty()) {
+//            Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists From database")
+//            allPlaylistKeys.clear()
+//            localCollection.map {
+//                allPlaylistsMap.keys.add(it)
+//            }
+//            emit(DataState(allPlaylistsMap, StateEvent.Success))
+//            return@flow
+//        }
 
         //else in network, fetch network, write to database and cache in memory, then emit memory
-        Log.d(TAG, "getAllplaylists: Retrieving playlists from network")
-        val remoteCollection = fetchAllPlaylistsFromNetwork()
+        Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists from network")
+        val remoteCollection = fetchAllPlaylistKeysFromNetwork()
         if(!remoteCollection.isNullOrEmpty()) {
-            allPlaylists.clear()
+            allPlaylistsMap.clear()
             remoteCollection.map {
-                databaseDao.insertPlaylist(cacheMapper.mapToPlaylistEntity(it))
-                allPlaylists.add(it)
+ //               databaseDao.insertPlaylist(cacheMapper.mapToPlaylistEntity(it))
+                allPlaylistsMap.put(it, Playlist(emptyList()))
             }
-            emit(DataState(allPlaylists, StateEvent.Success))
+
+            emit(DataState(allPlaylistsMap, StateEvent.Success))
             return@flow
         }
 
@@ -427,19 +436,95 @@ constructor(
         emit(DataState(null, StateEvent.Error))
     }
 
-
-    private suspend fun fetchAllPlaylistsFromDatabase() : List<Playlist> {
+    private suspend fun fetchAllPlaylistKeysFromDatabase() : List<PlaylistKey> {
         return cacheMapper.mapFromPlaylistEntityList(databaseDao.getAllPlaylists())
     }
 
-    private suspend fun fetchAllPlaylistsFromNetwork() : List<Playlist> {
+    private suspend fun fetchAllPlaylistKeysFromNetwork() : List<PlaylistKey> {
         return try{
-            networkMapper.mapFromPlaylistEntityList(networkApi.getAllPlaylists(userToken))
+            networkMapper.mapFromPlaylistKeyEntityList(networkApi.getAllPlaylists(userToken))
         } catch (e: Exception){
             Log.d(TAG, "$e")
             emptyList()
         }
     }
+
+
+
+
+    suspend fun getPlaylist(playlistKey: PlaylistKey): Flow<DataState<out Map<PlaylistKey, Playlist>>> = flow {
+
+        //if in memory, emit the memory
+        if(!allPlaylistsMap[playlistKey]?.playlistItems.isNullOrEmpty()) {
+            Log.d(TAG, "getAllPlaylists: Retrieving Tracks From memory")
+            emit(DataState(allPlaylistsMap, StateEvent.Success))
+
+            return@flow
+        }
+
+        emit(DataState(null, StateEvent.Loading))
+
+        //else in database, fetch db, cache to memory and emit memory
+//        val localCollection = fetchPlaylistTracksFromDatabase()
+//        if(!localCollection.isNullOrEmpty()) {
+//            Log.d(TAG, "getAllPlaylists: Retrieving Tracks From database")
+//            allPlaylistTracks.clear()
+//            allPlaylistTracks[playlistId] = localCollection
+//            allPlaylistTracks[playlistId]?.let { readyPlaylistSources(it) }
+//            emit(DataState(allPlaylistTracks[playlistId], StateEvent.Success))
+//            return@flow
+//        }
+
+        //else in network, fetch network, write to database and cache in memory, then emit memory
+        Log.d(TAG, "getAllPlaylists: Retrieving Tracks From network")
+        val remotePlaylist = fetchPlaylistFromNetwork(playlistKey)
+        if(!remotePlaylist.playlistItems.isNullOrEmpty()) {
+//            remoteCollection.map {
+////                databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
+////            }
+            allPlaylistsMap[playlistKey] = remotePlaylist
+            //allPlaylistsMap[playlistId]?.let { readyPlaylistSources(it.playlistItems) }
+            emit(DataState(allPlaylistsMap, StateEvent.Success))
+            return@flow
+        }
+
+        //else unable to retrieve data
+        emit(DataState(null, StateEvent.Error))
+    }
+
+    private fun fetchPlaylistTracksFromDatabase(): List<Track> {
+        //return cacheMapper.mapFromTrackEntityList(databaseDao.get())
+        //TODO:
+
+        //val lasdas = databaseDao.getPlaylistsWithSongs()
+
+
+        return emptyList()
+    }
+
+    private suspend fun fetchPlaylistFromNetwork(playlistKey: PlaylistKey): Playlist {
+        return try{
+            val thelist = networkMapper.mapFromPlaylistEntityList(networkApi.getAllPlaylistTracks(userToken, playlistKey.id).content)
+            val playlist = Playlist(thelist)
+            return playlist
+        } catch (e: Exception){
+            Log.d(TAG, "$e")
+            Playlist(emptyList())
+        }
+
+    }
+
+
+    //check memory for playlist id and associated track list [id, list<track>]
+
+    //check database for stored tracklist select * where
+
+    //query network
+
+
+
+
+
 
 
     
@@ -479,4 +564,5 @@ private fun String.toSort() : Sort {
     }
 }
 
+//enum class Sort(i: Int) {ID(5), A_TO_Z, NEWEST, OLDEST}
 enum class Sort {ID, A_TO_Z, NEWEST, OLDEST}

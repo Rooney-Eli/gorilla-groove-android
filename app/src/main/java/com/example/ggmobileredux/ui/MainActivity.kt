@@ -1,16 +1,11 @@
-package com.example.ggmobileredux.ui.library
+package com.example.ggmobileredux.ui
 
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.util.Log
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.widget.SeekBar
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -24,6 +19,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+const val TAG = "AppDebug"
+
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
@@ -33,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var glide: RequestManager
 
     private val viewModel: MainViewModel by viewModels()
+    private val playerControlsViewModel: PlayerControlsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,14 +91,22 @@ class MainActivity : AppCompatActivity() {
             }
 
         subscribeObservers()
-
         initProgressBar()
+
         playpause_button.setOnClickListener {
-            viewModel.playPause()
+            playerControlsViewModel.playPause()
         }
 
         repeat_button.setOnClickListener {
-            viewModel.repeat()
+            playerControlsViewModel.repeat()
+        }
+
+        next_button.setOnClickListener {
+            playerControlsViewModel.skipToNext()
+        }
+
+        previous_button.setOnClickListener {
+            playerControlsViewModel.skipToPrevious()
         }
 
         audio_seek_bar.setOnSeekBarChangeListener(
@@ -117,7 +123,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                    viewModel.skipTo(audio_seek_bar.progress.toLong() * 1000)
+                    playerControlsViewModel.seekTo(audio_seek_bar.progress.toLong() * 1000)
                 }
 
             }
@@ -127,24 +133,19 @@ class MainActivity : AppCompatActivity() {
     private fun initProgressBar() {
         audio_seek_bar.min = 0
         audio_seek_bar.max = 100
-        //audio_seek_bar.
-        //audio_progress_bar.progress = 50
+
     }
 
     private fun subscribeObservers() {
-        viewModel.playPauseState.observe(this, Observer {
+        playerControlsViewModel.playbackState.observe(this, Observer {
             if (it.isPlaying) {
                 playpause_button.setImageResource(R.drawable.ic_pause_24)
             } else {
                 playpause_button.setImageResource(R.drawable.ic_play_arrow_24)
             }
-
-
-
         })
 
-
-        viewModel.repeatState.observe(this, Observer {
+        playerControlsViewModel.repeatState.observe(this, Observer {
             when(it) {
                 REPEAT_MODE_NONE -> {
                     repeat_button.setImageResource(R.drawable.ic_repeat_24)
@@ -161,9 +162,12 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        playerControlsViewModel.isBuffering.observe(this, Observer {
+            audio_seek_bar.isIndeterminate = it
 
+        })
 
-        viewModel.currentTrackItem.observe(this, Observer {
+        playerControlsViewModel.currentTrackItem.observe(this, Observer {
             now_playing_textview.text = it.description?.title
             track_duration_textview.text =
                 it.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).getSongTimeFromMilliseconds()
@@ -171,15 +175,15 @@ class MainActivity : AppCompatActivity() {
                 it.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).toInt() / 1000
         })
 
-        viewModel.mediaPosition.observe(this, Observer {
+        playerControlsViewModel.mediaPosition.observe(this, Observer {
             track_position_textview.text = it?.getSongTimeFromMilliseconds() ?: "0"
             audio_seek_bar.progress = (it?.toInt() ?: 0) / 1000
-            Log.d(TAG, "subscribeObservers: $it")
+//            Log.d(TAG, "subscribeObservers: $it")
         })
-        
-        viewModel.bufferPosition.observe(this, Observer {
+
+        playerControlsViewModel.bufferPosition.observe(this, Observer {
             audio_seek_bar.secondaryProgress = (it?.toInt() ?: 0) / 1000
-            Log.d(TAG, "subscribeObservers: $it")
+            Log.d(TAG, "subscribeObservers: BUFFERED AMOUNT:  $it")
         })
 
     }

@@ -1,6 +1,12 @@
 package com.example.ggmobileredux.network
 
-import com.example.ggmobileredux.model.TrackWrapper
+import com.example.ggmobileredux.network.login.LoginRequest
+import com.example.ggmobileredux.network.login.LoginResponseNetworkEntity
+import com.example.ggmobileredux.network.playlist.PlaylistKeyNetworkEntity
+import com.example.ggmobileredux.network.playlist.PlaylistNetworkEntity
+import com.example.ggmobileredux.network.track.TrackLinkResponse
+import com.example.ggmobileredux.network.track.TrackNetworkEntity
+import com.example.ggmobileredux.network.track.TrackWrapper
 import retrofit2.http.*
 
 interface NetworkApi {
@@ -20,6 +26,9 @@ interface NetworkApi {
     suspend fun getAllUsers(@Header("Authorization") token: String ): List<UserNetworkEntity>
 
     @GET("api/playlist")
-    suspend fun getAllPlaylists(@Header("Authorization") token: String): List<PlaylistNetworkEntity>
+    suspend fun getAllPlaylists(@Header("Authorization") token: String): List<PlaylistKeyNetworkEntity>
+
+    @GET("api/playlist/track")
+    suspend fun getAllPlaylistTracks(@Header("Authorization") token: String, @Query("playlistId") playlistId: Int ): PlaylistNetworkEntity
 
 }

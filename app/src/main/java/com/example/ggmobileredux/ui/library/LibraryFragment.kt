@@ -14,6 +14,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.Sort
+import com.example.ggmobileredux.ui.LibraryEvent
+import com.example.ggmobileredux.ui.MainViewModel
+import com.example.ggmobileredux.ui.PlayerControlsViewModel
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
@@ -31,6 +34,7 @@ import javax.inject.Inject
 class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTrackListener {
     val TAG = "AppDebug"
     private val viewModel: MainViewModel by viewModels()
+    private val playerControlsViewModel: PlayerControlsViewModel by viewModels()
     lateinit var playlistAdapter: PlaylistAdapter
     var actionMode : ActionMode? = null
 
@@ -42,11 +46,6 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-
-        val time = System.currentTimeMillis()
-
-        Log.d(TAG, "onViewCreated: ${System.currentTimeMillis()}")
-        
 
         Log.d(TAG, "onViewCreated: Retrieving tracks for recycler view from viewmodel...")
         viewModel.setLibraryEvent(LibraryEvent.GetAllTracksEvents)
@@ -85,7 +84,7 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
 
         val searchItem = menu.findItem(R.id.action_search)
         val searchView = searchItem.actionView as SearchView
-        searchView.imeOptions = EditorInfo.IME_ACTION_DONE;
+        searchView.imeOptions = EditorInfo.IME_ACTION_DONE
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -93,8 +92,8 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                playlistAdapter.filter.filter(newText);
-                return false;
+                playlistAdapter.filter.filter(newText)
+                return false
             }
         })
 
@@ -154,9 +153,10 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
     override fun onTrackClick(position: Int) {
         val clickedTrack = playlistAdapter.filteredList[position]
         Log.d(TAG, "onTrackClick: $clickedTrack")
-        viewModel.playMedia(clickedTrack, CALLING_FRAGMENT_LIBRARY)
+        playerControlsViewModel.playMedia(clickedTrack, CALLING_FRAGMENT_LIBRARY)
     }
 
+    @ExperimentalCoroutinesApi
     override fun onTrackLongClick(position: Int): Boolean {
         Log.d(TAG, "onTrackLongClick: Long clicked $position")
         return when (actionMode) {

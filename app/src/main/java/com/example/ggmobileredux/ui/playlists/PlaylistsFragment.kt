@@ -10,64 +10,61 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
-import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.model.Playlist
-import com.example.ggmobileredux.ui.library.MainViewModel
-import com.example.ggmobileredux.ui.library.PlaylistsEvent
+import com.example.ggmobileredux.model.PlaylistItem
+import com.example.ggmobileredux.model.PlaylistKey
+import com.example.ggmobileredux.model.Track
+import com.example.ggmobileredux.ui.MainViewModel
+import com.example.ggmobileredux.ui.PlaylistsEvent
 import com.example.ggmobileredux.util.StateEvent
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.android.synthetic.main.fragment_playlists.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @AndroidEntryPoint
-class PlaylistsFragment : Fragment(R.layout.fragment_playlists), PlaylistAdapter.OnPlaylistListener {
+class PlaylistsFragment : Fragment(R.layout.fragment_playlists), PlaylistKeyAdapter.OnPlaylistListener {
+    val TAG = "AppDebug: PlaylistFragment: "
 
-    val TAG = "AppDebug"
     private val viewModel: MainViewModel by viewModels()
-    lateinit var playlistAdapter: PlaylistAdapter
+    lateinit var playlistKeyAdapter: PlaylistKeyAdapter
 
     @ExperimentalCoroutinesApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         setupRecyclerView()
         subscribeObservers()
-        viewModel.setPlaylistsEvent(PlaylistsEvent.GetAllPlaylists)
+        viewModel.setPlaylistsEvent(PlaylistsEvent.GetAllPlaylistKeys)
     }
 
-    private fun setupRecyclerView() = playlists_rv.apply {
-        playlistAdapter = PlaylistAdapter(this@PlaylistsFragment)
-        adapter = playlistAdapter
+    private fun setupRecyclerView() = playlists_key_rv.apply {
+        playlistKeyAdapter = PlaylistKeyAdapter(this@PlaylistsFragment)
+        adapter = playlistKeyAdapter
         layoutManager = LinearLayoutManager(requireContext())
     }
 
     private fun subscribeObservers() {
-        viewModel.playlists.observe(requireActivity(), Observer {
+        viewModel.playlistMap.observe(requireActivity(), Observer {
             when (it.stateEvent) {
                 is StateEvent.Success -> {
-//                    displayProgressBar(false)
-                    playlistAdapter.submitList(it.data as List<Playlist>)
+                        playlistKeyAdapter.submitPlaylistMap((it.data as Map<PlaylistKey, Playlist>).keys.toList())
                 }
                 is StateEvent.Error -> {
-//                    displayProgressBar(false)
                     Toast.makeText(requireContext(), "Error occurred", Toast.LENGTH_SHORT).show()
                 }
                 is StateEvent.Loading -> {
-//                    displayProgressBar(true)
                 }
             }
         })
     }
 
+    @ExperimentalCoroutinesApi
     override fun onPlaylistClick(position: Int) {
-        Log.d(TAG, "onPlaylistClick: clicked ${playlistAdapter.playlistList[position].name}")
+        Log.d(TAG, "onPlaylistClick: Clicked: $position")
     }
 
     override fun onPlaylistLongClick(position: Int): Boolean {
-        Log.d(TAG, "onPlaylistLongClick: long clicked ${playlistAdapter.playlistList[position].name}")
+        Log.d(TAG, "onPlaylistLongClick: Long Clicked: $position")
+
         return true
     }
-
-
 }

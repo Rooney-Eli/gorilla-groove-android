@@ -1,9 +1,6 @@
 package com.example.ggmobileredux.database
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 
 @Dao
 interface DatabaseDao {
@@ -33,14 +30,19 @@ interface DatabaseDao {
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPlaylist(playlistEntity: PlaylistCacheEntity): Long
+    suspend fun insertPlaylist(playlistKeyEntity: PlaylistKeyCacheEntity): Long
 
     @Query("SELECT * from playlists")
-    suspend fun getAllPlaylists(): List<PlaylistCacheEntity>
+    suspend fun getAllPlaylists(): List<PlaylistKeyCacheEntity>
 
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlaylistTracks(trackEntity: TrackCacheEntity): Long //returns insertion row number
 
+    @Query("SELECT * from tracks")
+    suspend fun getAllPlaylistTracks(): List<TrackCacheEntity>
 
-
-
+//    @Transaction
+//    @Query("SELECT * FROM playlist_with_track")
+//    fun getPlaylistsWithSongs(): List<TrackCacheEntity>
 }

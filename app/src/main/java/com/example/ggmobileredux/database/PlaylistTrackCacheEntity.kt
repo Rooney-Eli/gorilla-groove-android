@@ -4,15 +4,14 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "playlists")
-data class PlaylistCacheEntity(
-    //PK set to false so I can use GG backend id key
+@Entity(tableName = "playlist_tracks")
+data class PlaylistTrackCacheEntity (
     @PrimaryKey(autoGenerate = false)
-    @ColumnInfo(name = "id")
+    @ColumnInfo(name = "trackId")
     var id: Int,
 
-    @ColumnInfo(name = "name")
-    var name: String,
+    @ColumnInfo(name = "track")
+    var track: TrackCacheEntity,
 
     @ColumnInfo(name = "createdAt")
     var createdAt: String,

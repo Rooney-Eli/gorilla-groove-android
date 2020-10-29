@@ -1,11 +1,9 @@
 package com.example.ggmobileredux.ui.library
 
-import android.util.SparseBooleanArray
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.core.util.keyIterator
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
