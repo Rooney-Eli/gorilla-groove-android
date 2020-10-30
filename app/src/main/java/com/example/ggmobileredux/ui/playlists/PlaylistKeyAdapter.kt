@@ -12,15 +12,17 @@ import com.example.ggmobileredux.model.PlaylistKey
 import kotlinx.android.synthetic.main.playlists_info_item.view.*
 import java.util.*
 
-const val TAG = "AppDebug"
+
 
 class PlaylistKeyAdapter(
     private val playlistKeyListener: OnPlaylistListener
 ) : RecyclerView.Adapter<PlaylistKeyAdapter.PlaylistViewHolder>(), Filterable {
 
+    val TAG = "AppDebug"
     var playlistKeyList = mutableListOf<PlaylistKey>()
 
     fun submitPlaylistMap(playlistKeys: List<PlaylistKey>) {
+        playlistKeyList.clear()
         playlistKeyList.addAll(playlistKeys)
         notifyDataSetChanged()
     }

@@ -47,6 +47,9 @@
         <action
             android:id="@+id/action_playlistsFragment_to_mainFragment"
             app:destination="@id/mainFragment" />
+        <action
+            android:id="@+id/action_playlistsFragment_to_playlistFragment"
+            app:destination="@id/playlistFragment" />
     </fragment>
     <fragment
         android:id="@+id/settingsFragment"
@@ -62,6 +65,18 @@
         android:label="UsersFragment" >
         <action
             android:id="@+id/action_usersFragment_to_mainFragment"
+            app:destination="@id/mainFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/playlistFragment"
+        android:name="com.example.ggmobileredux.ui.playlists.playlist.PlaylistFragment"
+        android:label="PlaylistFragment" >
+
+        <argument
+            android:name="playlistKeyId"
+            android:defaultValue="None"/>
+        <action
+            android:id="@+id/action_playlistFragment_to_mainFragment"
             app:destination="@id/mainFragment" />
     </fragment>
 </navigation>

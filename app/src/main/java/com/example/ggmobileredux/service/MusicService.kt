@@ -15,6 +15,7 @@ import androidx.media.MediaBrowserServiceCompat
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_PLAYLIST
 import com.example.ggmobileredux.util.Constants.KEY_CALLING_FRAGMENT
 import com.example.ggmobileredux.util.Constants.MEDIA_ROOT_ID
 import com.google.android.exoplayer2.ControlDispatcher
@@ -155,6 +156,7 @@ class MusicService : MediaBrowserServiceCompat() {
             when(activeSource){
                 CALLING_FRAGMENT_LIBRARY -> repo.libraryMetadataList[windowIndex].description
                 CALLING_FRAGMENT_NOW_PLAYING -> repo.nowPlayingMetadataList[windowIndex].description
+                CALLING_FRAGMENT_PLAYLIST -> repo.playlistMetadataList[windowIndex].description
                 else -> repo.libraryMetadataList[windowIndex].description
             }
 
@@ -196,6 +198,17 @@ class MusicService : MediaBrowserServiceCompat() {
                     } else {
                         activeSource = CALLING_FRAGMENT_NOW_PLAYING
                         preparePlayer(repo.nowPlayingConcatenatingMediaSource, songIndex, true)
+                    }
+                }
+                CALLING_FRAGMENT_PLAYLIST -> {
+                    val itemToPlay = repo.playlistMetadataList.find { it.id == mediaId }
+                    val songIndex = if (itemToPlay == null) 0 else repo.playlistMetadataList.indexOf(itemToPlay)
+
+                    if(activeSource == CALLING_FRAGMENT_PLAYLIST) {
+                        exoPlayer.seekTo(songIndex, 0)
+                    } else {
+                        activeSource = CALLING_FRAGMENT_PLAYLIST
+                        preparePlayer(repo.playlistConcatenatingMediaSource, songIndex, true)
                     }
                 }
             }

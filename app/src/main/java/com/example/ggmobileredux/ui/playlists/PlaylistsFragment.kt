@@ -5,9 +5,12 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.navigation.NavOptions
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Playlist
@@ -27,10 +30,12 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists), PlaylistKeyAdap
 
     private val viewModel: MainViewModel by viewModels()
     lateinit var playlistKeyAdapter: PlaylistKeyAdapter
+    private var savedInstanceStateBundle: Bundle? = null
 
     @ExperimentalCoroutinesApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        savedInstanceStateBundle = savedInstanceState
         setupRecyclerView()
         subscribeObservers()
         viewModel.setPlaylistsEvent(PlaylistsEvent.GetAllPlaylistKeys)
@@ -43,10 +48,10 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists), PlaylistKeyAdap
     }
 
     private fun subscribeObservers() {
-        viewModel.playlistMap.observe(requireActivity(), Observer {
+        viewModel.playlistKeys.observe(requireActivity(), Observer {
             when (it.stateEvent) {
                 is StateEvent.Success -> {
-                        playlistKeyAdapter.submitPlaylistMap((it.data as Map<PlaylistKey, Playlist>).keys.toList())
+                        playlistKeyAdapter.submitPlaylistMap((it.data as List<PlaylistKey>))
                 }
                 is StateEvent.Error -> {
                     Toast.makeText(requireContext(), "Error occurred", Toast.LENGTH_SHORT).show()
@@ -60,6 +65,13 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists), PlaylistKeyAdap
     @ExperimentalCoroutinesApi
     override fun onPlaylistClick(position: Int) {
         Log.d(TAG, "onPlaylistClick: Clicked: $position")
+        val playlistKeyId = playlistKeyAdapter.playlistKeyList[position].id
+        val bundle = bundleOf("PLAYLIST_KEY_ID" to playlistKeyId)
+
+        findNavController().navigate(
+            R.id.action_playlistsFragment_to_playlistFragment,
+            bundle
+        )
     }
 
     override fun onPlaylistLongClick(position: Int): Boolean {

@@ -49,16 +49,18 @@ class MainRepository (
 
     private var userToken: String = sharedPreferences.getString(KEY_USER_TOKEN, "") ?: ""
 
-    var trackSorting: Sort = sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort() ?: Sort.ID
+    private var trackSorting: Sort = sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort() ?: Sort.ID
 
     //glorified memory for lookups
     private val allTracks = LinkedHashMap<Int, Track>()
     private val allUsers = mutableListOf<User>()
-    private val allPlaylistKeys = mutableListOf<PlaylistKey>()
+    //private val allPlaylistsMap = mutableMapOf<PlaylistKey, Playlist>()
+    private val playlistKeys = mutableListOf<PlaylistKey>()
+    private val playlists = mutableListOf<Playlist>()
+
 
     init {
         initWebSocket()
-
     }
 
     //KEEP THESE IN SYNC WITH EACH OTHER
@@ -71,8 +73,13 @@ class MainRepository (
     val playlistConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val playlistMetadataList = mutableListOf<MediaMetadataCompat>()
 
+
     val sortedTrackList = mutableListOf<Track>()
     private val nowPlayingTracks = mutableListOf<Track>()
+
+    private var lastVerifiedTrack: Int? = null
+    private lateinit var lastFetchedLinks: TrackLinkResponse
+
 
     fun fetchNowPlayingTracks() : List<Track>{
         return nowPlayingTracks
@@ -80,12 +87,11 @@ class MainRepository (
 
     fun setNowPlayingTracks(trackIds: List<Int>) {
         nowPlayingTracks.clear()
-        trackIds.map {
-            nowPlayingTracks.add(allTracks[it]!!)
+        trackIds.map { trackId ->
+            allTracks[trackId]?.let { nowPlayingTracks.add(it)}
         }
         readyNowPlayingSources(nowPlayingTracks)
     }
-
     fun sendNowPlayingToServer(track: MediaDescriptionCompat) {
         val jsonObject = JSONObject().apply {
             put("messageType", "NOW_PLAYING")
@@ -97,7 +103,6 @@ class MainRepository (
         Log.d(TAG, "sendNowPlayingToServer: $mes")
         webSocket.send(mes)
     }
-
     fun sendStoppedPlayingToServer(track: MediaDescriptionCompat) {
         val jsonObject = JSONObject().apply {
             put("messageType", "NOW_PLAYING")
@@ -109,7 +114,6 @@ class MainRepository (
         Log.d(TAG, "sendStoppedPlayingToServer: $mes")
         webSocket.send(mes)
     }
-
 
     fun sortTracks(sort: Sort) {
         trackSorting = sort
@@ -123,70 +127,21 @@ class MainRepository (
         readyLibrarySources(sortedTrackList)
     }
 
-
-
-
-
-    private fun ConcatenatingMediaSource.addCustomMediaSource(track: Track) {
-        val resolvingDataSourceFactory = ResolvingDataSource.Factory(dataSourceFactory, object: ResolvingDataSource.Resolver {
-            var oldUri: Uri? = null
-            var newUri: Uri? = null
-
-            override fun resolveDataSpec(dataSpec: DataSpec): DataSpec {
-                if(dataSpec.uri == oldUri || dataSpec.uri == newUri) {
-                    newUri?.let { return dataSpec.buildUpon().setUri(it).build() }
-                }
-
-                oldUri = dataSpec.uri
-                lateinit var fetchedUri : Uri
-                lateinit var fetchedUris: TrackLinkResponse
-                runBlocking {
-                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()))
-                }
-
-                fetchedUri = Uri.parse(fetchedUris.trackLink)
-                newUri = fetchedUri
-
-
-
-                return dataSpec.buildUpon().setUri(fetchedUri).build()
-
-            }
-        })
-
-        val progressiveMediaSource = ProgressiveMediaSource.Factory(resolvingDataSourceFactory)
-        this.addMediaSource(progressiveMediaSource.createMediaSource(track.toMediaItem()))
-    }
-
-    private var lastVerifiedTrack: Int? = null
-    private lateinit var lastFetchedLinks: TrackLinkResponse
-
     suspend fun getTrackLinks(id: Int) : TrackLinkResponse {
 
         if(lastVerifiedTrack == id) {
             return lastFetchedLinks
         }
 
-        //TODO: reposition trycatch
         return try {
-            val links = networkApi.getTrackLink(userToken, id)
-            val trackLink = links.trackLink
-            val artLink = links.albumArtLink
-
+            lastFetchedLinks = networkApi.getTrackLink(userToken, id)
             lastVerifiedTrack = id
-            lastFetchedLinks =
-                TrackLinkResponse(
-                    trackLink,
-                    artLink
-                )
             lastFetchedLinks
-
         } catch (e: Exception) {
             Log.d(TAG, "$e")
             TrackLinkResponse(" ", null)
         }
     }
-
     private fun readyLibrarySources(playlist: List<Track>) {
         libraryConcatenatingMediaSource.clear()
         libraryMetadataList.clear()
@@ -195,7 +150,6 @@ class MainRepository (
             libraryMetadataList.add(it.toMediaMetadataItem())
         }
     }
-
     private fun readyNowPlayingSources(playlist: List<Track>) {
         nowPlayingConcatenatingMediaSource.clear()
         nowPlayingMetadataList.clear()
@@ -204,7 +158,6 @@ class MainRepository (
             nowPlayingMetadataList.add(it.toMediaMetadataItem())
         }
     }
-
     private fun readyPlaylistSources(playlist: List<Track>) {
         playlistConcatenatingMediaSource.clear()
         playlistMetadataList.clear()
@@ -267,7 +220,6 @@ class MainRepository (
         //else unable to retrieve data
         emit(DataState(null, StateEvent.Error))
     }
-
     private suspend fun fetchAllTracksFromDatabase() : List<Track> {
         return when(sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort()) {
             Sort.ID -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracks())
@@ -277,7 +229,6 @@ class MainRepository (
             else -> cacheMapper.mapFromTrackEntityList(databaseDao.getAllTracks())
         }
     }
-
     private suspend fun fetchAllTracksFromNetwork() : List<Track> {
         return try{
              networkMapper.mapFromTrackEntityList(networkApi.get(userToken).trackList)
@@ -286,50 +237,6 @@ class MainRepository (
             emptyList()
         }
     }
-
-
-    private fun validateLink(url: String): Boolean {
-        val client = OkHttpClient()
-
-        val request = Request.Builder()
-            .url(url)
-            .build()
-        val call = client.newCall(request)
-        val response = call.execute()
-        Log.d(TAG, "validateLink: server response: ${response.code}")
-        return response.code != 404
-    }
-
-    suspend fun getToken(loginRequest: LoginRequest): Flow<SessionState<*>> = flow {
-        emit(SessionState(null, StateEvent.Loading))
-        try {
-            val loginResponse = networkApi.getAuthorization(loginRequest)
-            userToken = loginResponse.token
-
-            sharedPreferences.edit()
-                .putString(KEY_USER_TOKEN, userToken)
-                .apply()
-
-            initWebSocket()
-
-            emit(SessionState(loginResponse, StateEvent.AuthSuccess))
-        } catch(e: Exception) {
-            emit(SessionState(null, StateEvent.Error))
-        }
-    }
-
-    private fun initWebSocket() {
-        if(userToken != "") {
-            val request = Request.Builder()
-                .url("wss://gorillagroove.net/api/socket")
-                .addHeader("Authorization", "Bearer $userToken")
-                .build()
-            webSocket = okClient.newWebSocket(request, OkHttpWebSocket())
-        }
-
-    }
-
-
 
     suspend fun getAllUsers(): Flow<DataState<out List<User>>> = flow {
 
@@ -378,11 +285,9 @@ class MainRepository (
         //else unable to retrieve data
         emit(DataState(null, StateEvent.Error))
     }
-
     private suspend fun fetchAllUsersFromDatabase() : List<User> {
         return cacheMapper.mapFromUserEntityList(databaseDao.getAllUsers())
     }
-
     private suspend fun fetchAllUsersFromNetwork() : List<User> {
         return try{
             networkMapper.mapFromUserEntityList(networkApi.getAllUsers(userToken))
@@ -393,13 +298,13 @@ class MainRepository (
     }
 
 
-    private val allPlaylistsMap = mutableMapOf<PlaylistKey, Playlist>()
 
-    suspend fun getAllPlaylistKeys(): Flow<DataState<out Map<PlaylistKey, Playlist>>> = flow {
 
-        if(!allPlaylistsMap.isNullOrEmpty()){
+    suspend fun getAllPlaylistKeys(): Flow<DataState<out List<PlaylistKey>>> = flow {
+
+        if(!playlistKeys.isNullOrEmpty()){
             Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists From sorted list in memory")
-            emit(DataState(allPlaylistsMap, StateEvent.Success))
+            emit(DataState(playlistKeys, StateEvent.Success))
 
             return@flow
         }
@@ -414,7 +319,7 @@ class MainRepository (
 //            localCollection.map {
 //                allPlaylistsMap.keys.add(it)
 //            }
-//            emit(DataState(allPlaylistsMap, StateEvent.Success))
+//            emit(DataState(allPlaylistsMap.keys.toList(), StateEvent.Success))
 //            return@flow
 //        }
 
@@ -422,24 +327,22 @@ class MainRepository (
         Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists from network")
         val remoteCollection = fetchAllPlaylistKeysFromNetwork()
         if(!remoteCollection.isNullOrEmpty()) {
-            allPlaylistsMap.clear()
+            playlistKeys.clear()
             remoteCollection.map {
  //               databaseDao.insertPlaylist(cacheMapper.mapToPlaylistEntity(it))
-                allPlaylistsMap.put(it, Playlist(emptyList()))
+                playlistKeys.add(it)
             }
 
-            emit(DataState(allPlaylistsMap, StateEvent.Success))
+            emit(DataState(playlistKeys, StateEvent.Success))
             return@flow
         }
 
         //else unable to retrieve data
         emit(DataState(null, StateEvent.Error))
     }
-
     private suspend fun fetchAllPlaylistKeysFromDatabase() : List<PlaylistKey> {
         return cacheMapper.mapFromPlaylistEntityList(databaseDao.getAllPlaylists())
     }
-
     private suspend fun fetchAllPlaylistKeysFromNetwork() : List<PlaylistKey> {
         return try{
             networkMapper.mapFromPlaylistKeyEntityList(networkApi.getAllPlaylists(userToken))
@@ -449,15 +352,14 @@ class MainRepository (
         }
     }
 
+    suspend fun getPlaylist(playlistKeyId: Int): Flow<DataState<out Playlist>> = flow {
 
-
-
-    suspend fun getPlaylist(playlistKey: PlaylistKey): Flow<DataState<out Map<PlaylistKey, Playlist>>> = flow {
+        val playlist = playlists.find { plist -> plist.id == playlistKeyId  }
 
         //if in memory, emit the memory
-        if(!allPlaylistsMap[playlistKey]?.playlistItems.isNullOrEmpty()) {
-            Log.d(TAG, "getAllPlaylists: Retrieving Tracks From memory")
-            emit(DataState(allPlaylistsMap, StateEvent.Success))
+        if(playlist != null) {
+
+            emit(DataState(playlist, StateEvent.Success))
 
             return@flow
         }
@@ -477,22 +379,21 @@ class MainRepository (
 
         //else in network, fetch network, write to database and cache in memory, then emit memory
         Log.d(TAG, "getAllPlaylists: Retrieving Tracks From network")
+        val playlistKey = playlistKeys.find {playlistKeyId == it.id } ?: return@flow
         val remotePlaylist = fetchPlaylistFromNetwork(playlistKey)
-        if(!remotePlaylist.playlistItems.isNullOrEmpty()) {
+        if(remotePlaylist != null) {
 //            remoteCollection.map {
-////                databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
-////            }
-            allPlaylistsMap[playlistKey] = remotePlaylist
-            //allPlaylistsMap[playlistId]?.let { readyPlaylistSources(it.playlistItems) }
-            emit(DataState(allPlaylistsMap, StateEvent.Success))
+//                databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
+//            }
+            playlists.add(remotePlaylist)
+            emit(DataState(remotePlaylist, StateEvent.Success))
             return@flow
         }
 
         //else unable to retrieve data
         emit(DataState(null, StateEvent.Error))
     }
-
-    private fun fetchPlaylistTracksFromDatabase(): List<Track> {
+    private suspend fun fetchPlaylistTracksFromDatabase(): List<Track> {
         //return cacheMapper.mapFromTrackEntityList(databaseDao.get())
         //TODO:
 
@@ -501,35 +402,83 @@ class MainRepository (
 
         return emptyList()
     }
-
-    private suspend fun fetchPlaylistFromNetwork(playlistKey: PlaylistKey): Playlist {
+    private suspend fun fetchPlaylistFromNetwork(playlistKey: PlaylistKey): Playlist? {
         return try{
-            val thelist = networkMapper.mapFromPlaylistEntityList(networkApi.getAllPlaylistTracks(userToken, playlistKey.id).content)
-            val playlist = Playlist(thelist)
-            return playlist
+             val theList = networkMapper.mapToPlaylist(
+                playlistKey,
+                networkApi.getAllPlaylistTracks(userToken, playlistKey.id)
+            )
+           theList
         } catch (e: Exception){
             Log.d(TAG, "$e")
-            Playlist(emptyList())
+            null
         }
 
     }
 
 
-    //check memory for playlist id and associated track list [id, list<track>]
+    suspend fun getToken(loginRequest: LoginRequest): Flow<SessionState<*>> = flow {
+        emit(SessionState(null, StateEvent.Loading))
+        try {
+            val loginResponse = networkApi.getAuthorization(loginRequest)
+            userToken = loginResponse.token
 
-    //check database for stored tracklist select * where
+            sharedPreferences.edit()
+                .putString(KEY_USER_TOKEN, userToken)
+                .apply()
 
-    //query network
+            initWebSocket()
 
+            emit(SessionState(loginResponse, StateEvent.AuthSuccess))
+        } catch(e: Exception) {
+            emit(SessionState(null, StateEvent.Error))
+        }
+    }
 
+    private fun initWebSocket() {
+        if(userToken != "") {
+            val request = Request.Builder()
+                .url("wss://gorillagroove.net/api/socket")
+                .addHeader("Authorization", "Bearer $userToken")
+                .build()
+            webSocket = okClient.newWebSocket(request, OkHttpWebSocket())
+        }
 
+    }
 
-
-
-
-    
     fun cleanUpAndCloseConnections() {
         okClient.dispatcher.executorService.shutdown()
+    }
+
+    private fun ConcatenatingMediaSource.addCustomMediaSource(track: Track) {
+        val resolvingDataSourceFactory = ResolvingDataSource.Factory(dataSourceFactory, object: ResolvingDataSource.Resolver {
+            var oldUri: Uri? = null
+            var newUri: Uri? = null
+
+            override fun resolveDataSpec(dataSpec: DataSpec): DataSpec {
+                if(dataSpec.uri == oldUri || dataSpec.uri == newUri) {
+                    newUri?.let { return dataSpec.buildUpon().setUri(it).build() }
+                }
+
+                oldUri = dataSpec.uri
+                lateinit var fetchedUri : Uri
+                lateinit var fetchedUris: TrackLinkResponse
+                runBlocking {
+                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()))
+                }
+
+                fetchedUri = Uri.parse(fetchedUris.trackLink)
+                newUri = fetchedUri
+
+
+
+                return dataSpec.buildUpon().setUri(fetchedUri).build()
+
+            }
+        })
+
+        val progressiveMediaSource = ProgressiveMediaSource.Factory(resolvingDataSourceFactory)
+        this.addMediaSource(progressiveMediaSource.createMediaSource(track.toMediaItem()))
     }
 }
 

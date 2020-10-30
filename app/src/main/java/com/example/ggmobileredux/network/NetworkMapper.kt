@@ -4,6 +4,7 @@ import com.example.ggmobileredux.model.*
 import com.example.ggmobileredux.network.login.LoginResponseNetworkEntity
 import com.example.ggmobileredux.network.playlist.PlaylistKeyNetworkEntity
 import com.example.ggmobileredux.network.playlist.PlaylistItemNetworkEntity
+import com.example.ggmobileredux.network.playlist.PlaylistNetworkEntity
 import com.example.ggmobileredux.network.track.TrackNetworkEntity
 import javax.inject.Inject
 
@@ -142,7 +143,19 @@ constructor() {
         return entities.map { mapFromPlaylistEntity(it) }
     }
 
+    fun mapToPlaylist(
+        playlistKey: PlaylistKey,
+        playlistNetworkEntity: PlaylistNetworkEntity
+    ): Playlist {
+        return Playlist(
+            id = playlistKey.id,
+            name = playlistKey.name,
+            playlistItems = mapFromPlaylistEntityList(playlistNetworkEntity.content),
+            createdAt = playlistKey.createdAt,
+            updatedAt = playlistKey.updatedAt
 
+        )
+    }
 
 
 }

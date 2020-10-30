@@ -2,6 +2,7 @@ package com.example.ggmobileredux.util
 
 object Constants {
 
+
     const val KEY_TRACKS = "tracks"
 
     const val MEDIA_ROOT_ID = "root_id"
@@ -22,4 +23,5 @@ object Constants {
     const val KEY_CALLING_FRAGMENT = "KEY_CALLING_FRAGMENT"
     const val CALLING_FRAGMENT_LIBRARY = "CALLING_FRAGMENT_LIBRARY"
     const val CALLING_FRAGMENT_NOW_PLAYING = "CALLING_FRAGMENT_NOW_PLAYING"
+    const val CALLING_FRAGMENT_PLAYLIST = "CALLING_FRAGMENT_PLAYLIST"
 }

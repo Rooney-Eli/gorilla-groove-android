@@ -43,17 +43,17 @@ constructor(
     val users: LiveData<DataState<out List<User>>>
         get() = _users
 
-//    private val _playlistKeys: MutableLiveData<DataState<*>> = MutableLiveData()
-//    val playlistKeys: LiveData<DataState<*>>
-//        get() = _playlistKeys
-//
-//    private val _playlists: MutableLiveData<DataState<*>> = MutableLiveData()
-//    val playlists: LiveData<DataState<*>>
-//        get() = _playlists
+    private val _playlistKeys: MutableLiveData<DataState<out List<PlaylistKey>>> = MutableLiveData()
+    val playlistKeys: LiveData<DataState<out List<PlaylistKey>>>
+        get() = _playlistKeys
 
-    private val _playlistMap: MutableLiveData<DataState<out Map<PlaylistKey, Playlist>>> = MutableLiveData()
-    val playlistMap: LiveData<DataState<out Map<PlaylistKey, Playlist>>>
-        get() = _playlistMap
+    private val _playlist: MutableLiveData<DataState<out Playlist>> = MutableLiveData()
+    val playlist: LiveData<DataState<out Playlist>>
+        get() = _playlist
+//
+//    private val _playlistMap: MutableLiveData<DataState<out Map<PlaylistKey, Playlist>>> = MutableLiveData()
+//    val playlistMap: LiveData<DataState<out Map<PlaylistKey, Playlist>>>
+//        get() = _playlistMap
 
     @ExperimentalCoroutinesApi
     fun setLoginStateEvent(loginStateEvent: LoginStateEvent<LoginRequest>) {
@@ -92,20 +92,20 @@ constructor(
     }
 
     @ExperimentalCoroutinesApi
-    fun setPlaylistsEvent(playlistsEvent: PlaylistsEvent<PlaylistKey>) {
+    fun setPlaylistsEvent(playlistsEvent: PlaylistsEvent<Int>) {
         viewModelScope.launch {
             when (playlistsEvent) {
                 is PlaylistsEvent.GetAllPlaylistKeys -> {
                     mainRepository.getAllPlaylistKeys()
                         .onEach {
-                            _playlistMap.postValue(it)
+                            _playlistKeys.postValue(it)
                         }
                         .launchIn(viewModelScope)
                 }
-                is PlaylistsEvent.GetPlaylist<PlaylistKey> -> {
+                is PlaylistsEvent.GetPlaylist<Int> -> {
                     mainRepository.getPlaylist(playlistsEvent.data)
                         .onEach {
-                            _playlistMap.postValue(it)
+                            _playlist.postValue(it)
                         }
                         .launchIn(viewModelScope)
                 }
