@@ -21,6 +21,9 @@ interface DatabaseDao {
     @Query("SELECT * from tracks ORDER BY addedToLibrary DESC")
     suspend fun  getAllTracksSortedDateAddedNewest(): List<TrackCacheEntity>
 
+    @Query("SELECT * FROM tracks WHERE trackId = :trackId")
+    suspend fun getTrackById(trackId: Int) : TrackCacheEntity
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(userEntity: UserCacheEntity): Long
@@ -30,19 +33,30 @@ interface DatabaseDao {
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPlaylist(playlistKeyEntity: PlaylistKeyCacheEntity): Long
+    suspend fun insertPlaylistKey(playlistKeyEntity: PlaylistKeyCacheEntity): Long
 
     @Query("SELECT * from playlists")
     suspend fun getAllPlaylists(): List<PlaylistKeyCacheEntity>
 
+    @Query("SELECT * from playlists WHERE playlistId = :playlistId")
+    suspend fun getPlaylistById(playlistId: Int): PlaylistKeyCacheEntity
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPlaylistTracks(trackEntity: TrackCacheEntity): Long //returns insertion row number
+    suspend fun insertPlaylistTracks(trackEntity: TrackCacheEntity): Long
 
     @Query("SELECT * from tracks")
     suspend fun getAllPlaylistTracks(): List<TrackCacheEntity>
 
-//    @Transaction
-//    @Query("SELECT * FROM playlist_with_track")
-//    fun getPlaylistsWithSongs(): List<TrackCacheEntity>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlaylistReferenceData(playlistItemEntity: PlaylistItemReferenceData): Long
+
+    @Query("SELECT * from playlist_items WHERE playlistId = :playlistId")
+    suspend fun getPlaylistReferenceData(playlistId: Int): List<PlaylistItemReferenceData>
+
+
+
+
 }

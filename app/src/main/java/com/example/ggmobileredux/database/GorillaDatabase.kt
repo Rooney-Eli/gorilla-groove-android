@@ -6,7 +6,9 @@ import androidx.room.RoomDatabase
 @Database(entities = [
     TrackCacheEntity::class,
     UserCacheEntity::class,
-    PlaylistKeyCacheEntity::class], version = 1)
+    PlaylistKeyCacheEntity::class,
+    PlaylistItemReferenceData::class
+], version = 1)
 
 abstract class GorillaDatabase: RoomDatabase() {
 

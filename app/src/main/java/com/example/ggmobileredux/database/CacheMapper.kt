@@ -1,8 +1,6 @@
 package com.example.ggmobileredux.database
 
-import com.example.ggmobileredux.model.PlaylistKey
-import com.example.ggmobileredux.model.Track
-import com.example.ggmobileredux.model.User
+import com.example.ggmobileredux.model.*
 import javax.inject.Inject
 
 class CacheMapper
@@ -72,10 +70,8 @@ constructor() {
         return tracks.map { mapToUserEntity(it) }
     }
 
-    //Playlist
-
-
-    fun mapFromPlaylistEntity(entity: PlaylistKeyCacheEntity): PlaylistKey {
+    //Playlist Key
+    fun mapFromPlaylistKeyEntity(entity: PlaylistKeyCacheEntity): PlaylistKey {
         return PlaylistKey(
             id = entity.id,
             name = entity.name,
@@ -85,7 +81,7 @@ constructor() {
         )
     }
 
-    fun mapToPlaylistEntity(domainModel: PlaylistKey): PlaylistKeyCacheEntity {
+    fun mapToPlaylistKeyEntity(domainModel: PlaylistKey): PlaylistKeyCacheEntity {
         return PlaylistKeyCacheEntity(
             id = domainModel.id,
             name = domainModel.name,
@@ -94,13 +90,31 @@ constructor() {
         )
     }
 
+
+
     fun mapFromPlaylistEntityList(entities: List<PlaylistKeyCacheEntity>): List<PlaylistKey> {
-        return entities.map { mapFromPlaylistEntity(it) }
+        return entities.map { mapFromPlaylistKeyEntity(it) }
     }
 
     fun mapToPlaylistEntityList(tracks: List<PlaylistKey>): List<PlaylistKeyCacheEntity> {
-        return tracks.map { mapToPlaylistEntity(it) }
+        return tracks.map { mapToPlaylistKeyEntity(it) }
     }
+
+    fun mapToPlaylistItemList(playlist: Playlist): List<PlaylistItemReferenceData> {
+        val playlistId = playlist.id
+
+        val list = playlist.playlistItems.map {
+            PlaylistItemReferenceData(
+                id = it.id, //table insertion position
+                playlistId = playlistId, //associated playlist position
+                trackId = it.track.id, //associated track position
+                createdAt = it.createdAt, //when the playlist item was made
+                updatedAt = it.updatedAt //when the playlist item was updated
+            )
+        }
+        return list
+    }
+
 
 
 }

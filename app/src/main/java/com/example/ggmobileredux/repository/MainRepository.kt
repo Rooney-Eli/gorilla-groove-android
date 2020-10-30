@@ -54,7 +54,6 @@ class MainRepository (
     //glorified memory for lookups
     private val allTracks = LinkedHashMap<Int, Track>()
     private val allUsers = mutableListOf<User>()
-    //private val allPlaylistsMap = mutableMapOf<PlaylistKey, Playlist>()
     private val playlistKeys = mutableListOf<PlaylistKey>()
     private val playlists = mutableListOf<Playlist>()
 
@@ -158,12 +157,13 @@ class MainRepository (
             nowPlayingMetadataList.add(it.toMediaMetadataItem())
         }
     }
-    private fun readyPlaylistSources(playlist: List<Track>) {
+    private fun readyPlaylistSources(playlist: Playlist) {
+
         playlistConcatenatingMediaSource.clear()
         playlistMetadataList.clear()
-        playlist.forEach{
-            playlistConcatenatingMediaSource.addCustomMediaSource(it)
-            playlistMetadataList.add(it.toMediaMetadataItem())
+        playlist.playlistItems.forEach{
+            playlistConcatenatingMediaSource.addCustomMediaSource(it.track)
+            playlistMetadataList.add(it.track.toMediaMetadataItem())
         }
     }
 
@@ -240,13 +240,6 @@ class MainRepository (
 
     suspend fun getAllUsers(): Flow<DataState<out List<User>>> = flow {
 
-        if(!allUsers.isNullOrEmpty()){
-            Log.d(TAG, "getAllTracks: Retrieving Users From sorted list in memory")
-            emit(DataState(allUsers, StateEvent.Success))
-
-            return@flow
-        }
-
         //if in memory, emit the memory
         if(!allUsers.isNullOrEmpty()) {
             Log.d(TAG, "getAllTracks: Retrieving Users From memory")
@@ -254,7 +247,6 @@ class MainRepository (
 
             return@flow
         }
-
         emit(DataState(null, StateEvent.Loading))
 
         //else in database, fetch db, cache to memory and emit memory
@@ -297,9 +289,6 @@ class MainRepository (
         }
     }
 
-
-
-
     suspend fun getAllPlaylistKeys(): Flow<DataState<out List<PlaylistKey>>> = flow {
 
         if(!playlistKeys.isNullOrEmpty()){
@@ -308,28 +297,25 @@ class MainRepository (
 
             return@flow
         }
-
         emit(DataState(null, StateEvent.Loading))
 
-        //else in database, fetch db, cache to memory and emit memory
-//        val localCollection = fetchAllPlaylistKeysFromDatabase()
-//        if(!localCollection.isNullOrEmpty()) {
-//            Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists From database")
-//            allPlaylistKeys.clear()
-//            localCollection.map {
-//                allPlaylistsMap.keys.add(it)
-//            }
-//            emit(DataState(allPlaylistsMap.keys.toList(), StateEvent.Success))
-//            return@flow
-//        }
+        val localCollection = fetchAllPlaylistKeysFromDatabase()
+        if(!localCollection.isNullOrEmpty()) {
+            Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists From database")
+            playlistKeys.clear()
+            localCollection.map {
+                playlistKeys.add(it)
+            }
+            emit(DataState(playlistKeys, StateEvent.Success))
+            return@flow
+        }
 
-        //else in network, fetch network, write to database and cache in memory, then emit memory
         Log.d(TAG, "getAllPlaylistKeys: Retrieving playlists from network")
         val remoteCollection = fetchAllPlaylistKeysFromNetwork()
         if(!remoteCollection.isNullOrEmpty()) {
             playlistKeys.clear()
             remoteCollection.map {
- //               databaseDao.insertPlaylist(cacheMapper.mapToPlaylistEntity(it))
+                databaseDao.insertPlaylistKey(cacheMapper.mapToPlaylistKeyEntity(it))
                 playlistKeys.add(it)
             }
 
@@ -337,11 +323,10 @@ class MainRepository (
             return@flow
         }
 
-        //else unable to retrieve data
         emit(DataState(null, StateEvent.Error))
     }
     private suspend fun fetchAllPlaylistKeysFromDatabase() : List<PlaylistKey> {
-        return cacheMapper.mapFromPlaylistEntityList(databaseDao.getAllPlaylists())
+        return cacheMapper.mapFromPlaylistEntityList(databaseDao.getAllPlaylists()).sortedBy { it.name }
     }
     private suspend fun fetchAllPlaylistKeysFromNetwork() : List<PlaylistKey> {
         return try{
@@ -358,34 +343,34 @@ class MainRepository (
 
         //if in memory, emit the memory
         if(playlist != null) {
-
+            readyPlaylistSources(playlist)
             emit(DataState(playlist, StateEvent.Success))
-
+            Log.d(TAG, "getPlaylist: Retrieved Playlist From memory")
             return@flow
         }
 
+        val playlistKey = playlistKeys.find {playlistKeyId == it.id } ?: return@flow
         emit(DataState(null, StateEvent.Loading))
 
         //else in database, fetch db, cache to memory and emit memory
-//        val localCollection = fetchPlaylistTracksFromDatabase()
-//        if(!localCollection.isNullOrEmpty()) {
-//            Log.d(TAG, "getAllPlaylists: Retrieving Tracks From database")
-//            allPlaylistTracks.clear()
-//            allPlaylistTracks[playlistId] = localCollection
-//            allPlaylistTracks[playlistId]?.let { readyPlaylistSources(it) }
-//            emit(DataState(allPlaylistTracks[playlistId], StateEvent.Success))
-//            return@flow
-//        }
+        val localCollection = fetchPlaylistFromDatabase(playlistKey)
+        if(!localCollection.playlistItems.isNullOrEmpty()) {
+            playlists.add(localCollection)
+            readyPlaylistSources(localCollection)
+            Log.d(TAG, "getPlaylist: Retrieved Playlist From database")
+            emit(DataState(localCollection, StateEvent.Success))
+            return@flow
+        }
 
         //else in network, fetch network, write to database and cache in memory, then emit memory
-        Log.d(TAG, "getAllPlaylists: Retrieving Tracks From network")
-        val playlistKey = playlistKeys.find {playlistKeyId == it.id } ?: return@flow
         val remotePlaylist = fetchPlaylistFromNetwork(playlistKey)
         if(remotePlaylist != null) {
-//            remoteCollection.map {
-//                databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
-//            }
+            cacheMapper.mapToPlaylistItemList(remotePlaylist).map {
+                databaseDao.insertPlaylistReferenceData(it)
+            }
             playlists.add(remotePlaylist)
+            readyPlaylistSources(remotePlaylist)
+            Log.d(TAG, "getPlaylist: Retrieved Playlist From network")
             emit(DataState(remotePlaylist, StateEvent.Success))
             return@flow
         }
@@ -393,20 +378,41 @@ class MainRepository (
         //else unable to retrieve data
         emit(DataState(null, StateEvent.Error))
     }
-    private suspend fun fetchPlaylistTracksFromDatabase(): List<Track> {
-        //return cacheMapper.mapFromTrackEntityList(databaseDao.get())
-        //TODO:
+    private suspend fun fetchPlaylistFromDatabase(playlistKey: PlaylistKey): Playlist {
+        val referenceDataList = databaseDao.getPlaylistReferenceData(playlistKey.id)
 
-        //val lasdas = databaseDao.getPlaylistsWithSongs()
+        val trackCacheEntityList = referenceDataList.map {
+            databaseDao.getTrackById(it.trackId)
+        }
 
+        val trackList = cacheMapper.mapFromTrackEntityList(trackCacheEntityList)
 
-        return emptyList()
+        val trackMap = trackList.map { it.id to it}.toMap()
+
+        val playlistItemList = referenceDataList.map {
+
+            PlaylistItem(
+                id = it.id,
+                track = trackMap[it.trackId] ?: error("Lost it already somehow?"),
+                createdAt = it.createdAt,
+                updatedAt = it.updatedAt
+            )
+        }.sortedBy { it.id }
+
+        return Playlist(
+            id = playlistKey.id,
+            name = playlistKey.name,
+            playlistItems = playlistItemList,
+            createdAt = playlistKey.createdAt,
+            updatedAt = playlistKey.updatedAt
+
+        )
     }
     private suspend fun fetchPlaylistFromNetwork(playlistKey: PlaylistKey): Playlist? {
         return try{
              val theList = networkMapper.mapToPlaylist(
                 playlistKey,
-                networkApi.getAllPlaylistTracks(userToken, playlistKey.id)
+                networkApi.getAllPlaylistTracks(userToken, playlistKey.id, "id,ASC", 1000)
             )
            theList
         } catch (e: Exception){

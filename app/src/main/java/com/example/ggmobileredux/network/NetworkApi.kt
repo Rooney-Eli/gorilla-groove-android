@@ -29,6 +29,11 @@ interface NetworkApi {
     suspend fun getAllPlaylists(@Header("Authorization") token: String): List<PlaylistKeyNetworkEntity>
 
     @GET("api/playlist/track")
-    suspend fun getAllPlaylistTracks(@Header("Authorization") token: String, @Query("playlistId") playlistId: Int ): PlaylistNetworkEntity
+    suspend fun getAllPlaylistTracks(
+        @Header("Authorization") token: String,
+        @Query("playlistId") playlistId: Int,
+        @Query("sort") sort: String,
+        @Query("size") size: Int
+    ): PlaylistNetworkEntity
 
 }
