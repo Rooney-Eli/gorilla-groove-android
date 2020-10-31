@@ -81,6 +81,9 @@ class MainRepository (
 
 
     fun fetchNowPlayingTracks() : List<Track>{
+        if(nowPlayingTracks.isEmpty()) {
+            nowPlayingTracks.addAll(sortedTrackList)
+        }
         return nowPlayingTracks
     }
 
@@ -102,10 +105,10 @@ class MainRepository (
         Log.d(TAG, "sendNowPlayingToServer: $mes")
         webSocket.send(mes)
     }
-    fun sendStoppedPlayingToServer(track: MediaDescriptionCompat) {
+    fun sendStoppedPlayingToServer() {
         val jsonObject = JSONObject().apply {
             put("messageType", "NOW_PLAYING")
-            put("trackId", track.mediaId)
+            //put("trackId", track.mediaId)
             put("isPlaying", "false")
         }
 

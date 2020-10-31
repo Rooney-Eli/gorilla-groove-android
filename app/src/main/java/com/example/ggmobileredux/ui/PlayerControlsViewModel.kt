@@ -10,11 +10,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.*
 import com.example.ggmobileredux.model.Track
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.service.EMPTY_PLAYBACK_STATE
@@ -27,7 +23,7 @@ class PlayerControlsViewModel @ViewModelInject constructor(
     musicServiceConnection: MusicServiceConnection,
     @Assisted private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val TAG = "AppDebug"
+    private val TAG = "AppDebug: PlayerControlsViewModel: "
 
     private val transportControls: MediaControllerCompat.TransportControls by lazy { musicServiceConnection.transportControls }
 
@@ -61,6 +57,28 @@ class PlayerControlsViewModel @ViewModelInject constructor(
         postValue(0L)
     }
 
+
+    private var isPlaying = false
+    private var currentMetadata : MediaMetadataCompat? = null
+    private fun sendPlayStatusToServer() {
+        if(isPlaying && currentMetadata != null) {
+            currentMetadata?.description?.let { currTrack ->
+                Log.d(TAG, "Sending Now Playing to server: ${currTrack.title}: ")
+                repository.sendNowPlayingToServer(
+                    currTrack
+                )
+            }
+        } else if(!isPlaying && currentMetadata != null) {
+            repository.sendStoppedPlayingToServer()
+        } else {
+            //probably initialization
+        }
+
+    }
+
+
+
+
     private val playbackStateObserver = Observer<PlaybackStateCompat> {
         _playbackState.postValue(it ?: EMPTY_PLAYBACK_STATE)
 
@@ -73,19 +91,13 @@ class PlayerControlsViewModel @ViewModelInject constructor(
 
         when{
             it.isPlaying -> {
-                _currentTrackItem.value?.description?.let { currTrack ->
-                    repository.sendNowPlayingToServer(
-                        currTrack
-                    )
-                }
+                isPlaying = true
+                sendPlayStatusToServer()
             }
 
             it.isPaused -> {
-                _currentTrackItem.value?.description?.let { currTrack ->
-                    repository.sendStoppedPlayingToServer(
-                        currTrack
-                    )
-                }
+                isPlaying = false
+                sendPlayStatusToServer()
             }
         }
     }
@@ -95,6 +107,14 @@ class PlayerControlsViewModel @ViewModelInject constructor(
     }
     private val mediaMetadataObserver = Observer<MediaMetadataCompat> {
         _currentTrackItem.postValue(it)
+        if(it?.description?.mediaId != "") {
+            if(currentMetadata?.description?.mediaId != it.description?.mediaId) {
+                currentMetadata = it
+                sendPlayStatusToServer()
+            }
+        }
+
+
     }
 
     private val musicServiceConnection = musicServiceConnection.also {

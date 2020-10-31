@@ -50,10 +50,6 @@ constructor(
     private val _playlist: MutableLiveData<DataState<out Playlist>> = MutableLiveData()
     val playlist: LiveData<DataState<out Playlist>>
         get() = _playlist
-//
-//    private val _playlistMap: MutableLiveData<DataState<out Map<PlaylistKey, Playlist>>> = MutableLiveData()
-//    val playlistMap: LiveData<DataState<out Map<PlaylistKey, Playlist>>>
-//        get() = _playlistMap
 
     @ExperimentalCoroutinesApi
     fun setLoginStateEvent(loginStateEvent: LoginStateEvent<LoginRequest>) {
@@ -141,7 +137,6 @@ constructor(
     fun setNowPlayingTracks(trackIds: List<Int> ) {
         mainRepository.setNowPlayingTracks(trackIds)
         _nowPlayingTracks.postValue(mainRepository.fetchNowPlayingTracks())
-            //.also { playMedia(it[0], CALLING_FRAGMENT_NOW_PLAYING) }
     }
 
     fun sortTracks(sort: Sort) {
