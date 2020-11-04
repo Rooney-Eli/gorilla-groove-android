@@ -43,6 +43,21 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
         viewModel.nowPlayingTracks.observe(requireActivity(), Observer {
             trackListAdapter.submitList(it)
         })
+
+        playerControlsViewModel.currentTrackItem.observe(requireActivity(), Observer {
+
+            val mediaId = it.description.mediaId.toString()
+            if(mediaId != "") {
+               //val mediaIdInt = Integer.parseInt(mediaId)
+
+
+                trackListAdapter.playingTrackId = mediaId
+                trackListAdapter.notifyDataSetChanged()
+
+            }
+
+        })
+
     }
 
 

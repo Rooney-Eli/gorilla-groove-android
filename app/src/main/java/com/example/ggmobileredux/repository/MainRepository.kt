@@ -83,7 +83,9 @@ class MainRepository (
     fun fetchNowPlayingTracks() : List<Track>{
         if(nowPlayingTracks.isEmpty()) {
             nowPlayingTracks.addAll(sortedTrackList)
+            readyNowPlayingSources(nowPlayingTracks)
         }
+
         return nowPlayingTracks
     }
 

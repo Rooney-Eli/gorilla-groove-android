@@ -11,7 +11,6 @@ import com.example.ggmobileredux.model.Track
 import kotlinx.android.synthetic.main.playlist_track_info_item.view.*
 import kotlinx.android.synthetic.main.playlist_track_name_item.view.track_name
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.collections.LinkedHashMap
 
 class PlaylistAdapter(
@@ -20,6 +19,7 @@ class PlaylistAdapter(
 
     var trackList = listOf<Track>()
     val filteredList: MutableList<Track> = trackList.toMutableList()
+    var playingTrackId: String? = null
 
     val checkedTracks = LinkedHashMap<Int, Boolean>()
 
@@ -32,6 +32,10 @@ class PlaylistAdapter(
         notifyDataSetChanged()
 
     }
+
+//    fun setNowPlayingTrack(track: Track) {
+//        playingTrack = track
+//    }
 
     fun getSelectedTracks(): List<Int> {
         val tracks = mutableListOf<Int>()
@@ -60,6 +64,16 @@ class PlaylistAdapter(
         holder.tvName.text = currentTrack.name
         holder.tvAlbum.text = currentTrack.album
 
+        holder.imageButton.visibility = if(currentTrack.id.toString() == playingTrackId) {
+            View.VISIBLE
+            //holder.tvName.setTextColor(.getResources().getColor(R.color.white))
+        } else {
+            View.GONE
+        }
+
+//        holder.imageButton.setOnClickListener {
+//        }
+
         holder.checkbox.isVisible = showingCheckBox
         holder.checkbox.isChecked = checkedTracks[filteredList[position].id] ?: false
         holder.checkbox.setOnCheckedChangeListener { buttonView, isChecked ->
@@ -82,6 +96,7 @@ class PlaylistAdapter(
         val tvDuration: TextView = itemView.track_duration
         val tvName: TextView = itemView.track_name
         val tvAlbum: TextView = itemView.track_album
+        val imageButton: ImageButton = itemView.playStatusButton
         val checkbox: CheckBox = itemView.checkbox
 
         init {
@@ -108,6 +123,9 @@ class PlaylistAdapter(
             }
             return true
         }
+
+
+
     }
 
     override fun getFilter(): Filter {
