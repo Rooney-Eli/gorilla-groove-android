@@ -17,6 +17,7 @@ import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.ui.LibraryEvent
 import com.example.ggmobileredux.ui.MainViewModel
 import com.example.ggmobileredux.ui.PlayerControlsViewModel
+import com.example.ggmobileredux.ui.isPlaying
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
@@ -74,6 +75,18 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                     displayProgressBar(true)
                 }
             }
+        })
+        playerControlsViewModel.currentTrackItem.observe(requireActivity(), Observer {
+            val mediaId = it.description.mediaId.toString()
+            if(mediaId != "") {
+                playlistAdapter.playingTrackId = mediaId
+                playlistAdapter.notifyDataSetChanged()
+            }
+        })
+        playerControlsViewModel.playbackState.observe(requireActivity(), Observer {
+            playlistAdapter.isPlaying = it.isPlaying
+            playlistAdapter.notifyDataSetChanged()
+
         })
 
     }
@@ -172,6 +185,11 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                 false
             }
         }
+    }
+
+    override fun onPlayPauseClick(position: Int) {
+        playlistAdapter.isPlaying = playerControlsViewModel.playPause()
+        playlistAdapter.notifyDataSetChanged()
     }
 
     @ExperimentalCoroutinesApi

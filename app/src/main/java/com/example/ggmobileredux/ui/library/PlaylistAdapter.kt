@@ -1,15 +1,21 @@
 package com.example.ggmobileredux.ui.library
 
+import android.content.Context
+import android.graphics.Color
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.annotation.AttrRes
+import androidx.annotation.ColorInt
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import kotlinx.android.synthetic.main.playlist_track_info_item.view.*
 import kotlinx.android.synthetic.main.playlist_track_name_item.view.track_name
+import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.collections.LinkedHashMap
 
@@ -20,6 +26,7 @@ class PlaylistAdapter(
     var trackList = listOf<Track>()
     val filteredList: MutableList<Track> = trackList.toMutableList()
     var playingTrackId: String? = null
+    var isPlaying = false
 
     val checkedTracks = LinkedHashMap<Int, Boolean>()
 
@@ -48,6 +55,16 @@ class PlaylistAdapter(
         return tracks
     }
 
+    @ColorInt
+    fun Context.getColorFromAttr(
+        @AttrRes attrColor: Int,
+        typedValue: TypedValue = TypedValue(),
+        resolveRefs: Boolean = true
+    ): Int {
+        theme.resolveAttribute(attrColor, typedValue, resolveRefs)
+        return typedValue.data
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(
             R.layout.playlist_track_info_item, parent, false
@@ -64,15 +81,29 @@ class PlaylistAdapter(
         holder.tvName.text = currentTrack.name
         holder.tvAlbum.text = currentTrack.album
 
-        holder.imageButton.visibility = if(currentTrack.id.toString() == playingTrackId) {
-            View.VISIBLE
-            //holder.tvName.setTextColor(.getResources().getColor(R.color.white))
+        if(currentTrack.id.toString() == playingTrackId) {
+            val activeColor = holder.itemView.context.getColorFromAttr(R.attr.colorPrimary)
+            holder.tvName.setTextColor(activeColor)
+            holder.tvArtist.setTextColor(activeColor)
+            holder.tvAlbum.setTextColor(activeColor)
+            holder.imageButton.visibility = View.VISIBLE
+
         } else {
-            View.GONE
+
+
+            holder.tvName.setTextColor(holder.itemView.context.getColor(android.R.color.darker_gray))
+            holder.tvArtist.setTextColor(holder.itemView.context.getColor(android.R.color.tab_indicator_text))
+            holder.tvAlbum.setTextColor(holder.itemView.context.getColor(android.R.color.darker_gray))
+            holder.imageButton.visibility = View.GONE
         }
 
-//        holder.imageButton.setOnClickListener {
-//        }
+        if(isPlaying) {
+            holder.imageButton.setImageResource(R.drawable.ic_pause_24)
+
+        } else {
+            holder.imageButton.setImageResource(R.drawable.ic_play_arrow_24)
+        }
+
 
         holder.checkbox.isVisible = showingCheckBox
         holder.checkbox.isChecked = checkedTracks[filteredList[position].id] ?: false
@@ -102,7 +133,14 @@ class PlaylistAdapter(
         init {
             itemView.setOnClickListener(this)
             itemView.setOnLongClickListener(this)
+            imageButton.setOnClickListener {
+                val position = adapterPosition
+                if(position != RecyclerView.NO_POSITION) {
+                    listener.onPlayPauseClick(position)
+                }
+            }
         }
+
 
         override fun onClick(v: View?) {
             val position = adapterPosition
@@ -158,5 +196,6 @@ class PlaylistAdapter(
     interface OnTrackListener {
         fun onTrackClick(position: Int)
         fun onTrackLongClick(position: Int) : Boolean
+        fun onPlayPauseClick(position: Int)
     }
 }

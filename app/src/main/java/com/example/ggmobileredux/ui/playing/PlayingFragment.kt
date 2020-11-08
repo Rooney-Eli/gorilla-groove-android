@@ -10,9 +10,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.ui.PlayerControlsViewModel
 import com.example.ggmobileredux.ui.MainViewModel
+import com.example.ggmobileredux.ui.isPlaying
 import com.example.ggmobileredux.ui.library.PlaylistAdapter
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_playing.*
 
 @AndroidEntryPoint
@@ -58,6 +60,12 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
 
         })
 
+        playerControlsViewModel.playbackState.observe(requireActivity(), Observer {
+            trackListAdapter.isPlaying = it.isPlaying
+            trackListAdapter.notifyDataSetChanged()
+
+        })
+
     }
 
 
@@ -69,6 +77,11 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
     override fun onTrackLongClick(position: Int): Boolean {
         Log.d(TAG, "onTrackLongClick: ")
         return true
+    }
+
+    override fun onPlayPauseClick(position: Int) {
+
+        playerControlsViewModel.playPause()
     }
 
 }

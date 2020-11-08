@@ -138,11 +138,13 @@ class PlayerControlsViewModel @ViewModelInject constructor(
         transportControls.playFromMediaId(track.id.toString(), extras)
     }
 
-    fun playPause() {
-        if(_playbackState.value?.isPaused == true) {
+    fun playPause(): Boolean {
+        return if(_playbackState.value?.isPaused == true) {
             transportControls.play()
+            true
         } else {
             transportControls.pause()
+            false
         }
     }
 
