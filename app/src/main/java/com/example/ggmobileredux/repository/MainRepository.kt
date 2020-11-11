@@ -63,39 +63,37 @@ class MainRepository (
     }
 
     //KEEP THESE IN SYNC WITH EACH OTHER
-    val libraryConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
-    val libraryMetadataList = mutableListOf<MediaMetadataCompat>()
 
-    val nowPlayingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
-    val nowPlayingMetadataList = mutableListOf<MediaMetadataCompat>()
+    //everytime a new fragments tracks are fetched put em' here too
+    val pendingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val pendingMetadataList = mutableListOf<MediaMetadataCompat>()
 
-    val playlistConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
-    val playlistMetadataList = mutableListOf<MediaMetadataCompat>()
+    //if a user taps a track set this to pending tracks
+    val playingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val playingMetadataList = mutableListOf<MediaMetadataCompat>()
 
 
-    val sortedTrackList = mutableListOf<Track>()
-    private val nowPlayingTracks = mutableListOf<Track>()
+    //return pending tracks when a fragment's get tracks is activated
+    val pendingTracks = mutableListOf<Track>()
+    val playingTracks = mutableListOf<Track>()
 
     private var lastVerifiedTrack: Int? = null
     private lateinit var lastFetchedLinks: TrackLinkResponse
 
 
-    fun fetchNowPlayingTracks() : List<Track>{
-        if(nowPlayingTracks.isEmpty()) {
-            nowPlayingTracks.addAll(sortedTrackList)
-            readyNowPlayingSources(nowPlayingTracks)
+    fun stagePendingTracks() {
+        if(playingTracks != pendingTracks) {
+            playingTracks.clear()
+            playingTracks.addAll(pendingTracks)
+            playingConcatenatingMediaSource.clear()
+            playingMetadataList.clear()
+            pendingTracks.map {
+                playingConcatenatingMediaSource.addCustomMediaSource(it)
+                playingMetadataList.add(it.toMediaMetadataItem())
+            }
         }
-
-        return nowPlayingTracks
     }
 
-    fun setNowPlayingTracks(trackIds: List<Int>) {
-        nowPlayingTracks.clear()
-        trackIds.map { trackId ->
-            allTracks[trackId]?.let { nowPlayingTracks.add(it)}
-        }
-        readyNowPlayingSources(nowPlayingTracks)
-    }
     fun sendNowPlayingToServer(track: MediaDescriptionCompat) {
         val jsonObject = JSONObject().apply {
             put("messageType", "NOW_PLAYING")
@@ -122,13 +120,11 @@ class MainRepository (
     fun sortTracks(sort: Sort) {
         trackSorting = sort
         when(sort){
-            Sort.ID -> sortedTrackList.sortBy { it.id }
-            Sort.A_TO_Z -> sortedTrackList.sortBy { it.name }
-            Sort.NEWEST -> sortedTrackList.sortByDescending { it.addedToLibrary }
-            Sort.OLDEST -> sortedTrackList.sortBy { it.addedToLibrary }
+            Sort.ID -> pendingTracks.sortBy { it.id }
+            Sort.A_TO_Z -> pendingTracks.sortBy { it.name }
+            Sort.NEWEST -> pendingTracks.sortByDescending { it.addedToLibrary }
+            Sort.OLDEST -> pendingTracks.sortBy { it.addedToLibrary }
         }
-
-        readyLibrarySources(sortedTrackList)
     }
 
     suspend fun getTrackLinks(id: Int) : TrackLinkResponse {
@@ -146,46 +142,27 @@ class MainRepository (
             TrackLinkResponse(" ", null)
         }
     }
-    private fun readyLibrarySources(playlist: List<Track>) {
-        libraryConcatenatingMediaSource.clear()
-        libraryMetadataList.clear()
-        playlist.map{
-            libraryConcatenatingMediaSource.addCustomMediaSource(it)
-            libraryMetadataList.add(it.toMediaMetadataItem())
-        }
-    }
-    private fun readyNowPlayingSources(playlist: List<Track>) {
-        nowPlayingConcatenatingMediaSource.clear()
-        nowPlayingMetadataList.clear()
-        playlist.forEach{
-            nowPlayingConcatenatingMediaSource.addCustomMediaSource(it)
-            nowPlayingMetadataList.add(it.toMediaMetadataItem())
-        }
-    }
-    private fun readyPlaylistSources(playlist: Playlist) {
 
-        playlistConcatenatingMediaSource.clear()
-        playlistMetadataList.clear()
-        playlist.playlistItems.forEach{
-            playlistConcatenatingMediaSource.addCustomMediaSource(it.track)
-            playlistMetadataList.add(it.track.toMediaMetadataItem())
+    private fun readyPendingSources(tracks: List<Track>) {
+        pendingConcatenatingMediaSource.clear()
+        pendingMetadataList.clear()
+        tracks.map{
+            pendingConcatenatingMediaSource.addCustomMediaSource(it)
+            pendingMetadataList.add(it.toMediaMetadataItem())
         }
     }
 
 
     suspend fun getAllTracks(): Flow<DataState<out List<Track>>> = flow {
 
-        if(!sortedTrackList.isNullOrEmpty()){
-            Log.d(TAG, "getAllTracks: Retrieving Tracks From sorted list in memory")
-            emit(DataState(sortedTrackList, StateEvent.Success))
-
-            return@flow
-        }
-
         //if in memory, emit the memory
         if(!allTracks.isNullOrEmpty()) {
             Log.d(TAG, "getAllTracks: Retrieving Tracks From memory")
-            emit(DataState(allTracks.values.toList(), StateEvent.Success))
+            pendingTracks.clear()
+            pendingTracks.addAll(allTracks.values)
+            sortTracks(trackSorting)
+            readyPendingSources(pendingTracks)
+            emit(DataState(pendingTracks, StateEvent.Success))
 
             return@flow
         }
@@ -197,13 +174,14 @@ class MainRepository (
         if(!localCollection.isNullOrEmpty()) {
             Log.d(TAG, "getAllTracks: Retrieving Tracks From database")
             allTracks.clear()
+            pendingTracks.clear()
             localCollection.map {
-                allTracks.put(it.id, it)
+                allTracks[it.id] = it
+                pendingTracks.add(it)
             }
-            sortedTrackList.clear()
-            sortedTrackList.addAll(localCollection)
-            readyLibrarySources(sortedTrackList)
-            emit(DataState(allTracks.values.toList(), StateEvent.Success))
+            sortTracks(trackSorting)
+            readyPendingSources(pendingTracks)
+            emit(DataState(pendingTracks, StateEvent.Success))
             return@flow
         }
 
@@ -213,12 +191,12 @@ class MainRepository (
         if(!remoteCollection.isNullOrEmpty()) {
             remoteCollection.map {
                 databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
-                allTracks.put(it.id, it)
+                allTracks[it.id] = it
+                pendingTracks.add(it)
             }
-            sortedTrackList.clear()
-            sortedTrackList.addAll(remoteCollection)
-            readyLibrarySources(sortedTrackList)
-            emit(DataState(allTracks.values.toList(), StateEvent.Success))
+            sortTracks(trackSorting)
+            readyPendingSources(pendingTracks)
+            emit(DataState(pendingTracks, StateEvent.Success))
             return@flow
         }
 
@@ -348,7 +326,11 @@ class MainRepository (
 
         //if in memory, emit the memory
         if(playlist != null) {
-            readyPlaylistSources(playlist)
+            pendingTracks.clear()
+            pendingTracks.addAll(playlist.playlistItems.map {
+                it.track
+            })
+            readyPendingSources(pendingTracks)
             emit(DataState(playlist, StateEvent.Success))
             Log.d(TAG, "getPlaylist: Retrieved Playlist From memory")
             return@flow
@@ -361,7 +343,11 @@ class MainRepository (
         val localCollection = fetchPlaylistFromDatabase(playlistKey)
         if(!localCollection.playlistItems.isNullOrEmpty()) {
             playlists.add(localCollection)
-            readyPlaylistSources(localCollection)
+            pendingTracks.clear()
+            pendingTracks.addAll(localCollection.playlistItems.map {
+                it.track
+            })
+            readyPendingSources(pendingTracks)
             Log.d(TAG, "getPlaylist: Retrieved Playlist From database")
             emit(DataState(localCollection, StateEvent.Success))
             return@flow
@@ -374,7 +360,11 @@ class MainRepository (
                 databaseDao.insertPlaylistReferenceData(it)
             }
             playlists.add(remotePlaylist)
-            readyPlaylistSources(remotePlaylist)
+            pendingTracks.clear()
+            pendingTracks.addAll(remotePlaylist.playlistItems.map {
+                it.track
+            })
+            readyPendingSources(pendingTracks)
             Log.d(TAG, "getPlaylist: Retrieved Playlist From network")
             emit(DataState(remotePlaylist, StateEvent.Success))
             return@flow

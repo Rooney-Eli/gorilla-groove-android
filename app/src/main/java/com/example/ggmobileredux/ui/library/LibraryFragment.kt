@@ -88,7 +88,6 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
             playlistAdapter.notifyDataSetChanged()
 
         })
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -109,7 +108,6 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                 return false
             }
         })
-
     }
 
     @ExperimentalCoroutinesApi
@@ -162,14 +160,14 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
         }
     }
 
-    @ExperimentalCoroutinesApi
+
     override fun onTrackClick(position: Int) {
         val clickedTrack = playlistAdapter.filteredList[position]
         Log.d(TAG, "onTrackClick: $clickedTrack")
+       // viewModel.setNowPlayingTracks()
         playerControlsViewModel.playMedia(clickedTrack, CALLING_FRAGMENT_LIBRARY)
     }
 
-    @ExperimentalCoroutinesApi
     override fun onTrackLongClick(position: Int): Boolean {
         Log.d(TAG, "onTrackLongClick: Long clicked $position")
         return when (actionMode) {
@@ -192,7 +190,7 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
         playlistAdapter.notifyDataSetChanged()
     }
 
-    @ExperimentalCoroutinesApi
+
     private val actionModeCallback = object : ActionMode.Callback {
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
             val inflater: MenuInflater? = mode?.menuInflater
@@ -211,7 +209,7 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                 R.id.action_add -> {
 
                     val selectedTracks = playlistAdapter.getSelectedTracks()
-                    viewModel.setNowPlayingTracks(selectedTracks)
+                    //viewModel.setNowPlayingTracks(selectedTracks)
                     mode?.finish()
                     true
                 }

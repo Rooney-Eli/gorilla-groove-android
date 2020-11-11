@@ -134,6 +134,9 @@ class PlayerControlsViewModel @ViewModelInject constructor(
     }, POSITION_UPDATE_INTERVAL_MILLIS)
 
     fun playMedia(track: Track, callingFragment: String) {
+
+        repository.stagePendingTracks()
+
         val extras = Bundle().also { it.putString(Constants.KEY_CALLING_FRAGMENT, callingFragment) }
         transportControls.playFromMediaId(track.id.toString(), extras)
     }

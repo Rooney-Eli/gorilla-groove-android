@@ -76,7 +76,7 @@ class PlaylistFragment : Fragment(R.layout.fragment_playlist), PlaylistAdapter.O
             playlistAdapter.playlistItems[position].track,
             CALLING_FRAGMENT_PLAYLIST
         )
-        viewModel.setNowPlayingTracks(playlistAdapter.playlistItems.map { playlistItem -> playlistItem.track.id })
+        //viewModel.setNowPlayingTracks(playlistAdapter.playlistItems.map { playlistItem -> playlistItem.track.id })
 
     }
 

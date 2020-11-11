@@ -51,6 +51,10 @@ constructor(
     val playlist: LiveData<DataState<out Playlist>>
         get() = _playlist
 
+    fun getNowPlayingTracks() {
+        _nowPlayingTracks.postValue(mainRepository.playingTracks)
+    }
+
     @ExperimentalCoroutinesApi
     fun setLoginStateEvent(loginStateEvent: LoginStateEvent<LoginRequest>) {
         viewModelScope.launch {
@@ -130,18 +134,9 @@ constructor(
         }
     }
 
-    fun getNowPlayingTracks() {
-        _nowPlayingTracks.postValue(mainRepository.fetchNowPlayingTracks())
-    }
-
-    fun setNowPlayingTracks(trackIds: List<Int> ) {
-        mainRepository.setNowPlayingTracks(trackIds)
-        _nowPlayingTracks.postValue(mainRepository.fetchNowPlayingTracks())
-    }
-
     fun sortTracks(sort: Sort) {
         mainRepository.sortTracks(sort)
-        _libraryTracks.postValue(DataState(mainRepository.sortedTrackList, StateEvent.Success))
+        _libraryTracks.postValue(DataState(mainRepository.pendingTracks, StateEvent.Success))
     }
 
 }
