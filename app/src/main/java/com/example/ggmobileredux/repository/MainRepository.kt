@@ -62,18 +62,14 @@ class MainRepository (
         initWebSocket()
     }
 
-    //KEEP THESE IN SYNC WITH EACH OTHER
+    var dataSetChanged = false
 
-    //everytime a new fragments tracks are fetched put em' here too
     val pendingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val pendingMetadataList = mutableListOf<MediaMetadataCompat>()
 
-    //if a user taps a track set this to pending tracks
     val playingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val playingMetadataList = mutableListOf<MediaMetadataCompat>()
 
-
-    //return pending tracks when a fragment's get tracks is activated
     val pendingTracks = mutableListOf<Track>()
     val playingTracks = mutableListOf<Track>()
 
@@ -83,6 +79,7 @@ class MainRepository (
 
     fun stagePendingTracks() {
         if(playingTracks != pendingTracks) {
+            dataSetChanged = true
             playingTracks.clear()
             playingTracks.addAll(pendingTracks)
             playingConcatenatingMediaSource.clear()
