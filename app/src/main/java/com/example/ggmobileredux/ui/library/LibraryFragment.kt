@@ -145,8 +145,8 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                 true
             }
 
-            R.id.action_settings -> {
-                Toast.makeText(requireActivity(), "Settings?", Toast.LENGTH_SHORT).show()
+            R.id.action_logout -> {
+
                 true
             }
             else -> super.onOptionsItemSelected(item)

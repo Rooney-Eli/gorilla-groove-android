@@ -68,6 +68,9 @@ constructor(
                         }
                         .launchIn(viewModelScope)
                 }
+                is LoginStateEvent.LogoutEvent -> {
+                    mainRepository.logoutUser()
+                }
                 is LoginStateEvent.None -> {
                     //ignored
                 }
@@ -171,6 +174,7 @@ constructor(
 
 sealed class LoginStateEvent<out R> {
     data class LoginEvent<out T>(val data: T): LoginStateEvent<T>()
+    object LogoutEvent : LoginStateEvent<Nothing>()
     object None: LoginStateEvent<Nothing>()
 }
 

@@ -200,6 +200,10 @@ class PlayerControlsViewModel @ViewModelInject constructor(
         updatePosition = false
     }
 
+    fun logout() {
+        musicServiceConnection.transportControls.stop()
+    }
+
 }
 
 private const val POSITION_UPDATE_INTERVAL_MILLIS = 1000L

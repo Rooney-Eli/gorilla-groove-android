@@ -13,6 +13,7 @@ import com.example.ggmobileredux.network.login.LoginRequest
 import com.example.ggmobileredux.network.track.TrackLinkResponse
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_PLAYLIST
+import com.example.ggmobileredux.util.Constants.KEY_FIRST_TIME_TOGGLE
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.KEY_USER_TOKEN
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
@@ -512,6 +513,12 @@ class MainRepository (
         } catch(e: Exception) {
             emit(SessionState(null, StateEvent.Error))
         }
+    }
+
+    fun logoutUser() {
+        sharedPreferences.edit()
+            .putBoolean(KEY_FIRST_TIME_TOGGLE, true)
+            .apply()
     }
 
     private fun initWebSocket() {
