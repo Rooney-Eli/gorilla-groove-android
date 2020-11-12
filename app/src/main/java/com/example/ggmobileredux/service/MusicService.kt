@@ -7,16 +7,11 @@ import android.os.Bundle
 import android.os.ResultReceiver
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media.MediaBrowserServiceCompat
 import com.example.ggmobileredux.repository.MainRepository
-import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
-import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_NOW_PLAYING
-import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_PLAYLIST
-import com.example.ggmobileredux.util.Constants.KEY_CALLING_FRAGMENT
 import com.example.ggmobileredux.util.Constants.MEDIA_ROOT_ID
 import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.ExoPlaybackException
@@ -150,8 +145,9 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private inner class MusicQueueNavigator : TimelineQueueNavigator(mediaSession) {
-        override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat =
-            repo.playingMetadataList[windowIndex].description
+        override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat {
+            return repo.nowPlayingMetadataList[windowIndex].description
+        }
     }
 
     private inner class MusicPlaybackPreparer : MediaSessionConnector.PlaybackPreparer {
@@ -168,14 +164,15 @@ class MusicService : MediaBrowserServiceCompat() {
         override fun onPrepare(playWhenReady: Boolean) = Unit
         override fun onPrepareFromMediaId( mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
             
-            val itemToPlay = repo.playingMetadataList.find { it.id == mediaId }
-            val songIndex = if (itemToPlay == null) 0 else repo.playingMetadataList.indexOf(itemToPlay)
+            val itemToPlay = repo.nowPlayingMetadataList.find { it.id == mediaId }
+            val songIndex = if (itemToPlay == null) 0 else repo.nowPlayingMetadataList.indexOf(itemToPlay)
             
             if(repo.dataSetChanged) {
-                preparePlayer(repo.playingConcatenatingMediaSource, songIndex, true)
+                preparePlayer(repo.nowPlayingConcatenatingMediaSource, songIndex, true)
                 repo.dataSetChanged = false
             } else {
                 exoPlayer.seekTo(songIndex, 0)
+                exoPlayer.playWhenReady = true
             }
         }
         override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) = Unit

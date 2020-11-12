@@ -74,7 +74,8 @@ class PlaylistFragment : Fragment(R.layout.fragment_playlist), PlaylistAdapter.O
         Log.d(TAG, "onPlaylistClick: Clicked ${playlistAdapter.playlistItems[position].track}")
         playerControlsViewModel.playMedia(
             playlistAdapter.playlistItems[position].track,
-            CALLING_FRAGMENT_PLAYLIST
+            CALLING_FRAGMENT_PLAYLIST,
+            playlistKeyId
         )
         //viewModel.setNowPlayingTracks(playlistAdapter.playlistItems.map { playlistItem -> playlistItem.track.id })
 

@@ -4,15 +4,19 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.view.MenuItem.SHOW_AS_ACTION_ALWAYS
+import android.view.MenuItem.SHOW_AS_ACTION_NEVER
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
+import com.example.ggmobileredux.repository.SelectionOperation
 import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.ui.LibraryEvent
 import com.example.ggmobileredux.ui.MainViewModel
@@ -47,8 +51,6 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-
-        Log.d(TAG, "onViewCreated: Retrieving tracks for recycler view from viewmodel...")
         viewModel.setLibraryEvent(LibraryEvent.GetAllTracksEvents)
         setupRecyclerView()
         subscribeObservers()
@@ -164,8 +166,7 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
     override fun onTrackClick(position: Int) {
         val clickedTrack = playlistAdapter.filteredList[position]
         Log.d(TAG, "onTrackClick: $clickedTrack")
-       // viewModel.setNowPlayingTracks()
-        playerControlsViewModel.playMedia(clickedTrack, CALLING_FRAGMENT_LIBRARY)
+        playerControlsViewModel.playMedia(clickedTrack, CALLING_FRAGMENT_LIBRARY, null)
     }
 
     override fun onTrackLongClick(position: Int): Boolean {
@@ -191,11 +192,18 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
     }
 
 
+    @ExperimentalCoroutinesApi
     private val actionModeCallback = object : ActionMode.Callback {
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
             val inflater: MenuInflater? = mode?.menuInflater
             mode?.title = "Selecting tracks..."
             inflater?.inflate(R.menu.context_action_menu, menu)
+
+            //required because the XML is overridden
+            menu[0].setShowAsAction(SHOW_AS_ACTION_ALWAYS)
+            menu[1].setShowAsAction(SHOW_AS_ACTION_NEVER)
+            menu[2].setShowAsAction(SHOW_AS_ACTION_NEVER)
+            menu[3].setShowAsAction(SHOW_AS_ACTION_NEVER)
 
             return true
         }
@@ -206,13 +214,39 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
 
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem): Boolean {
             return when (item.itemId) {
-                R.id.action_add -> {
-
+                R.id.action_play_now_button -> {
                     val selectedTracks = playlistAdapter.getSelectedTracks()
-                    //viewModel.setNowPlayingTracks(selectedTracks)
+                    viewModel.setSelectedTracks(selectedTracks, SelectionOperation.PLAY_NOW)
+                    playlistAdapter.trackList.find { track -> track.id == selectedTracks[0] }?.let {
+                        playerControlsViewModel.playNow(it, CALLING_FRAGMENT_LIBRARY, null)
+                    }
                     mode?.finish()
                     true
                 }
+                R.id.action_play_now -> {
+                    val selectedTracks = playlistAdapter.getSelectedTracks()
+                    viewModel.setSelectedTracks(selectedTracks, SelectionOperation.PLAY_NOW)
+                    playlistAdapter.trackList.find { track -> track.id == selectedTracks[0] }?.let {
+                        playerControlsViewModel.playNow(it, CALLING_FRAGMENT_LIBRARY, null)
+                    }
+                    mode?.finish()
+                    true
+                }
+                R.id.action_play_next -> {
+                    val selectedTracks = playlistAdapter.getSelectedTracks()
+                    viewModel.setSelectedTracks(selectedTracks, SelectionOperation.PLAY_NEXT)
+                    mode?.finish()
+                    true
+                }
+                R.id.action_play_last -> {
+                    val selectedTracks = playlistAdapter.getSelectedTracks()
+                    viewModel.setSelectedTracks(selectedTracks, SelectionOperation.PLAY_LAST)
+                    mode?.finish()
+                    true
+                }
+
+
+
                 else -> false
             }
         }

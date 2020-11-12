@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/action_add"
-        android:icon="@drawable/ic_add_24"
-        android:title="Add"/>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/action_play_now_button"
+        android:icon="@drawable/ic_play_arrow_24"
+        android:title="Play Now"
+        app:showAsAction="ifRoom"
+        />
+
+    <item android:id="@+id/action_play_now"
+        android:title="Play Now"
+        app:showAsAction="never"/>
+    <item android:id="@+id/action_play_next"
+        android:title="Play Next"
+        app:showAsAction="never"/>
+    <item android:id="@+id/action_play_last"
+        android:title="Play Last"
+        app:showAsAction="never"/>
 </menu>

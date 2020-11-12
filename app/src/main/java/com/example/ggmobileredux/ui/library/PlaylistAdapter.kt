@@ -52,6 +52,7 @@ class PlaylistAdapter(
                 tracks.add(id)
             }
         }
+
         return tracks
     }
 

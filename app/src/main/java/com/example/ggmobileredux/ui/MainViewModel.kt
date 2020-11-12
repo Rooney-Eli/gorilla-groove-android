@@ -1,5 +1,6 @@
 package com.example.ggmobileredux.ui
 
+import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
@@ -10,6 +11,7 @@ import com.example.ggmobileredux.model.User
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.network.login.LoginRequest
+import com.example.ggmobileredux.repository.SelectionOperation
 import com.example.ggmobileredux.util.DataState
 import com.example.ggmobileredux.util.SessionState
 import com.example.ggmobileredux.util.StateEvent
@@ -51,9 +53,9 @@ constructor(
     val playlist: LiveData<DataState<out Playlist>>
         get() = _playlist
 
-    fun getNowPlayingTracks() {
-        _nowPlayingTracks.postValue(mainRepository.playingTracks)
-    }
+//    fun getNowPlayingTracks() {
+//        _nowPlayingTracks.postValue(mainRepository.playingTracks)
+//    }
 
     @ExperimentalCoroutinesApi
     fun setLoginStateEvent(loginStateEvent: LoginStateEvent<LoginRequest>) {
@@ -67,6 +69,25 @@ constructor(
                         .launchIn(viewModelScope)
                 }
                 is LoginStateEvent.None -> {
+                    //ignored
+                }
+            }
+        }
+    }
+
+    @ExperimentalCoroutinesApi
+    fun setNowPlayingEvent(nowPlayingEvent: NowPlayingEvent<Nothing>) {
+        viewModelScope.launch {
+            when (nowPlayingEvent) {
+                is NowPlayingEvent.GetNowPlayingTracksEvent -> {
+                    mainRepository.getNowPlayingTracks()
+                        .onEach {
+                            _nowPlayingTracks.postValue(it.data)
+                            Log.d(TAG, "setNowPlayingEvent: updated track listing!")
+                        }
+                        .launchIn(viewModelScope)
+                }
+                is NowPlayingEvent.None -> {
                     //ignored
                 }
             }
@@ -134,9 +155,16 @@ constructor(
         }
     }
 
-    fun sortTracks(sort: Sort) {
-        mainRepository.sortTracks(sort)
-        _libraryTracks.postValue(DataState(mainRepository.pendingTracks, StateEvent.Success))
+    fun sortTracks(sorting: Sort) {
+        mainRepository.sortLibrary(sorting)
+        _libraryTracks.postValue(DataState(mainRepository.allLibraryTracks, StateEvent.Success))
+    }
+
+    @ExperimentalCoroutinesApi
+    fun setSelectedTracks(trackIds: List<Int>, selectionOperation: SelectionOperation) {
+        mainRepository.setSelectedTracks(trackIds, selectionOperation)
+        Log.d(TAG, "setSelectedTracks: setting new tracks")
+        setNowPlayingEvent(NowPlayingEvent.GetNowPlayingTracksEvent)
     }
 
 }
@@ -149,6 +177,11 @@ sealed class LoginStateEvent<out R> {
 sealed class LibraryEvent<out R> {
     object GetAllTracksEvents: LibraryEvent<Nothing>()
     object None: LibraryEvent<Nothing>()
+}
+
+sealed class NowPlayingEvent<out R> {
+    object GetNowPlayingTracksEvent: NowPlayingEvent<Nothing>()
+    object None: NowPlayingEvent<Nothing>()
 }
 
 sealed class UsersEvent<Nothing> {

@@ -11,6 +11,8 @@ import com.example.ggmobileredux.database.DatabaseDao
 import com.example.ggmobileredux.model.*
 import com.example.ggmobileredux.network.login.LoginRequest
 import com.example.ggmobileredux.network.track.TrackLinkResponse
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
+import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_PLAYLIST
 import com.example.ggmobileredux.util.Constants.KEY_SORT
 import com.example.ggmobileredux.util.Constants.KEY_USER_TOKEN
 import com.example.ggmobileredux.util.Constants.SORT_BY_AZ
@@ -51,6 +53,9 @@ class MainRepository (
 
     private var trackSorting: Sort = sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort() ?: Sort.ID
 
+    private var lastVerifiedTrack: Int? = null
+    private lateinit var lastFetchedLinks: TrackLinkResponse
+
     //glorified memory for lookups
     private val allTracks = LinkedHashMap<Int, Track>()
     private val allUsers = mutableListOf<User>()
@@ -63,33 +68,77 @@ class MainRepository (
     }
 
     var dataSetChanged = false
-
-    val pendingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
-    val pendingMetadataList = mutableListOf<MediaMetadataCompat>()
-
-    val playingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
-    val playingMetadataList = mutableListOf<MediaMetadataCompat>()
-
-    val pendingTracks = mutableListOf<Track>()
-    val playingTracks = mutableListOf<Track>()
-
-    private var lastVerifiedTrack: Int? = null
-    private lateinit var lastFetchedLinks: TrackLinkResponse
+    var currentIndex = 0
 
 
-    fun stagePendingTracks() {
-        if(playingTracks != pendingTracks) {
-            dataSetChanged = true
-            playingTracks.clear()
-            playingTracks.addAll(pendingTracks)
-            playingConcatenatingMediaSource.clear()
-            playingMetadataList.clear()
-            pendingTracks.map {
-                playingConcatenatingMediaSource.addCustomMediaSource(it)
-                playingMetadataList.add(it.toMediaMetadataItem())
+    val allLibraryTracks = mutableListOf<Track>()
+    val libraryConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val libraryMetadataList = mutableListOf<MediaMetadataCompat>()
+
+    val playlistConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val playlistMetadataList = mutableListOf<MediaMetadataCompat>()
+
+    //This is directly tied to Now Playing Fragment display
+    val nowPlayingTracks = mutableListOf<Track>()
+    val nowPlayingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
+    val nowPlayingMetadataList = mutableListOf<MediaMetadataCompat>()
+
+    fun changeMediaSource(callingFragment: String, playlistId: Int?) {
+        when(callingFragment) {
+            CALLING_FRAGMENT_LIBRARY -> {
+                dataSetChanged = true
+                nowPlayingTracks.clear()
+                nowPlayingConcatenatingMediaSource.clear()
+                nowPlayingMetadataList.clear()
+
+                nowPlayingTracks.addAll(allTracks.values.toList())
+                nowPlayingTracks.map {
+                    nowPlayingConcatenatingMediaSource.addCustomMediaSource(it)
+                    nowPlayingMetadataList.add(it.toMediaMetadataItem())
+                }
+            }
+            CALLING_FRAGMENT_PLAYLIST -> {
+                dataSetChanged = true
+                nowPlayingTracks.clear()
+                nowPlayingConcatenatingMediaSource.clear()
+                nowPlayingMetadataList.clear()
+
+                val playlistItems = playlists.find { pId -> pId.id == playlistId }?.playlistItems
+
+                playlistItems?.map { it.track }?.let { nowPlayingTracks.addAll(it) }
+                nowPlayingTracks.map {
+                    nowPlayingConcatenatingMediaSource.addCustomMediaSource(it)
+                    nowPlayingMetadataList.add(it.toMediaMetadataItem())
+                }
             }
         }
     }
+
+    private fun insertNowPlayingTrack(track: Track) {
+        if(nowPlayingTracks.size > 0) {
+            nowPlayingTracks.add(currentIndex + 1, track)
+            nowPlayingConcatenatingMediaSource.addCustomMediaSource(currentIndex+1, track)
+            nowPlayingMetadataList.add(currentIndex +1, track.toMediaMetadataItem())
+        } else {
+            dataSetChanged = true
+            nowPlayingTracks.add(currentIndex, track)
+            nowPlayingConcatenatingMediaSource.addCustomMediaSource(currentIndex, track)
+            nowPlayingMetadataList.add(currentIndex, track.toMediaMetadataItem())
+        }
+    }
+    private fun addToEndNowPlayingTrack(track: Track) {
+        if(nowPlayingTracks.size > 0) {
+            nowPlayingTracks.add(track)
+            nowPlayingConcatenatingMediaSource.addCustomMediaSource(track)
+            nowPlayingMetadataList.add(track.toMediaMetadataItem())
+        } else {
+            dataSetChanged = true
+            nowPlayingTracks.add(track)
+            nowPlayingConcatenatingMediaSource.addCustomMediaSource(track)
+            nowPlayingMetadataList.add(track.toMediaMetadataItem())
+        }
+    }
+
 
     fun sendNowPlayingToServer(track: MediaDescriptionCompat) {
         val jsonObject = JSONObject().apply {
@@ -114,15 +163,42 @@ class MainRepository (
         webSocket.send(mes)
     }
 
-    fun sortTracks(sort: Sort) {
-        trackSorting = sort
-        when(sort){
-            Sort.ID -> pendingTracks.sortBy { it.id }
-            Sort.A_TO_Z -> pendingTracks.sortBy { it.name }
-            Sort.NEWEST -> pendingTracks.sortByDescending { it.addedToLibrary }
-            Sort.OLDEST -> pendingTracks.sortBy { it.addedToLibrary }
+
+
+
+    fun setSelectedTracks(trackIds: List<Int>, selectionOperation: SelectionOperation) {
+        when(selectionOperation) {
+            SelectionOperation.PLAY_NOW -> {
+                dataSetChanged = true
+                nowPlayingTracks.clear()
+                nowPlayingConcatenatingMediaSource.clear()
+                nowPlayingMetadataList.clear()
+
+                trackIds.map { allTracks[it]?.let { track -> nowPlayingTracks.add(track) } }
+                nowPlayingTracks.map {
+                    nowPlayingConcatenatingMediaSource.addCustomMediaSource(it)
+                    nowPlayingMetadataList.add(it.toMediaMetadataItem())
+                }
+
+
+            }
+            SelectionOperation.PLAY_NEXT -> {
+                trackIds.asReversed().map { allTracks[it]?.let { track ->
+                        insertNowPlayingTrack(track)
+                    }
+                }
+            }
+            SelectionOperation.PLAY_LAST -> {
+                    trackIds.asReversed().map { allTracks[it]?.let { track ->
+                        addToEndNowPlayingTrack(track)
+                    }
+                }
+            }
         }
+
     }
+
+
 
     suspend fun getTrackLinks(id: Int) : TrackLinkResponse {
 
@@ -140,26 +216,45 @@ class MainRepository (
         }
     }
 
-    private fun readyPendingSources(tracks: List<Track>) {
-        pendingConcatenatingMediaSource.clear()
-        pendingMetadataList.clear()
+    private fun readyLibrarySources(tracks: List<Track>) {
+        libraryConcatenatingMediaSource.clear()
+        libraryMetadataList.clear()
         tracks.map{
-            pendingConcatenatingMediaSource.addCustomMediaSource(it)
-            pendingMetadataList.add(it.toMediaMetadataItem())
+            libraryConcatenatingMediaSource.addCustomMediaSource(it)
+            libraryMetadataList.add(it.toMediaMetadataItem())
         }
     }
 
+    private fun readyPlaylistSources(tracks: List<Track>) {
+        playlistConcatenatingMediaSource.clear()
+        playlistMetadataList.clear()
+        tracks.map{
+            playlistConcatenatingMediaSource.addCustomMediaSource(it)
+            playlistMetadataList.add(it.toMediaMetadataItem())
+        }
+    }
+
+    suspend fun getNowPlayingTracks(): Flow<DataState<out List<Track>>> = flow {
+        emit(DataState(nowPlayingTracks, StateEvent.Success))
+    }
 
     suspend fun getAllTracks(): Flow<DataState<out List<Track>>> = flow {
+
+        if(!allLibraryTracks.isNullOrEmpty()) {
+            Log.d(TAG, "getAllTracks: Retrieving Tracks From memory")
+            //sortTracks(trackSorting)
+            readyLibrarySources(allLibraryTracks)
+            emit(DataState(allLibraryTracks, StateEvent.Success))
+
+            return@flow
+        }
 
         //if in memory, emit the memory
         if(!allTracks.isNullOrEmpty()) {
             Log.d(TAG, "getAllTracks: Retrieving Tracks From memory")
-            pendingTracks.clear()
-            pendingTracks.addAll(allTracks.values)
-            sortTracks(trackSorting)
-            readyPendingSources(pendingTracks)
-            emit(DataState(pendingTracks, StateEvent.Success))
+            //sortTracks(trackSorting)
+            readyLibrarySources(allLibraryTracks)
+            emit(DataState(allLibraryTracks, StateEvent.Success))
 
             return@flow
         }
@@ -171,14 +266,13 @@ class MainRepository (
         if(!localCollection.isNullOrEmpty()) {
             Log.d(TAG, "getAllTracks: Retrieving Tracks From database")
             allTracks.clear()
-            pendingTracks.clear()
             localCollection.map {
                 allTracks[it.id] = it
-                pendingTracks.add(it)
+                allLibraryTracks.add(it)
             }
-            sortTracks(trackSorting)
-            readyPendingSources(pendingTracks)
-            emit(DataState(pendingTracks, StateEvent.Success))
+            //sortTracks(trackSorting)
+            readyLibrarySources(allTracks.values.toList())
+            emit(DataState(allTracks.values.toList(), StateEvent.Success))
             return@flow
         }
 
@@ -189,11 +283,11 @@ class MainRepository (
             remoteCollection.map {
                 databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
                 allTracks[it.id] = it
-                pendingTracks.add(it)
+                allLibraryTracks.add(it)
             }
-            sortTracks(trackSorting)
-            readyPendingSources(pendingTracks)
-            emit(DataState(pendingTracks, StateEvent.Success))
+//            sortTracks(trackSorting)
+            readyLibrarySources(allTracks.values.toList())
+            emit(DataState(allLibraryTracks, StateEvent.Success))
             return@flow
         }
 
@@ -323,11 +417,7 @@ class MainRepository (
 
         //if in memory, emit the memory
         if(playlist != null) {
-            pendingTracks.clear()
-            pendingTracks.addAll(playlist.playlistItems.map {
-                it.track
-            })
-            readyPendingSources(pendingTracks)
+            readyPlaylistSources(playlist.playlistItems.map { it.track })
             emit(DataState(playlist, StateEvent.Success))
             Log.d(TAG, "getPlaylist: Retrieved Playlist From memory")
             return@flow
@@ -340,11 +430,7 @@ class MainRepository (
         val localCollection = fetchPlaylistFromDatabase(playlistKey)
         if(!localCollection.playlistItems.isNullOrEmpty()) {
             playlists.add(localCollection)
-            pendingTracks.clear()
-            pendingTracks.addAll(localCollection.playlistItems.map {
-                it.track
-            })
-            readyPendingSources(pendingTracks)
+            readyPlaylistSources(localCollection.playlistItems.map { it.track })
             Log.d(TAG, "getPlaylist: Retrieved Playlist From database")
             emit(DataState(localCollection, StateEvent.Success))
             return@flow
@@ -357,11 +443,7 @@ class MainRepository (
                 databaseDao.insertPlaylistReferenceData(it)
             }
             playlists.add(remotePlaylist)
-            pendingTracks.clear()
-            pendingTracks.addAll(remotePlaylist.playlistItems.map {
-                it.track
-            })
-            readyPendingSources(pendingTracks)
+            readyPlaylistSources(remotePlaylist.playlistItems.map { it.track })
             Log.d(TAG, "getPlaylist: Retrieved Playlist From network")
             emit(DataState(remotePlaylist, StateEvent.Success))
             return@flow
@@ -413,7 +495,6 @@ class MainRepository (
         }
 
     }
-
 
     suspend fun getToken(loginRequest: LoginRequest): Flow<SessionState<*>> = flow {
         emit(SessionState(null, StateEvent.Loading))
@@ -478,6 +559,49 @@ class MainRepository (
         val progressiveMediaSource = ProgressiveMediaSource.Factory(resolvingDataSourceFactory)
         this.addMediaSource(progressiveMediaSource.createMediaSource(track.toMediaItem()))
     }
+
+    private fun ConcatenatingMediaSource.addCustomMediaSource(index: Int, track: Track) {
+        val resolvingDataSourceFactory = ResolvingDataSource.Factory(dataSourceFactory, object: ResolvingDataSource.Resolver {
+            var oldUri: Uri? = null
+            var newUri: Uri? = null
+
+            override fun resolveDataSpec(dataSpec: DataSpec): DataSpec {
+                if(dataSpec.uri == oldUri || dataSpec.uri == newUri) {
+                    newUri?.let { return dataSpec.buildUpon().setUri(it).build() }
+                }
+
+                oldUri = dataSpec.uri
+                lateinit var fetchedUri : Uri
+                lateinit var fetchedUris: TrackLinkResponse
+                runBlocking {
+                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()))
+                }
+
+                fetchedUri = Uri.parse(fetchedUris.trackLink)
+                newUri = fetchedUri
+
+
+
+                return dataSpec.buildUpon().setUri(fetchedUri).build()
+
+            }
+        })
+
+        val progressiveMediaSource = ProgressiveMediaSource.Factory(resolvingDataSourceFactory)
+        this.addMediaSource(index, progressiveMediaSource.createMediaSource(track.toMediaItem()))
+    }
+
+    fun sortLibrary(sorting: Sort) {
+        trackSorting = sorting
+        when(sorting) {
+            Sort.ID -> allLibraryTracks.sortBy { it.id }
+            Sort.A_TO_Z -> allLibraryTracks.sortBy { it.name }
+            Sort.NEWEST -> allLibraryTracks.sortByDescending { it.addedToLibrary }
+            Sort.OLDEST -> allLibraryTracks.sortBy { it.addedToLibrary }
+        }
+    }
+
+
 }
 
 fun Track.toMediaMetadataItem(): MediaMetadataCompat =
@@ -511,5 +635,8 @@ private fun String.toSort() : Sort {
     }
 }
 
+
+
 //enum class Sort(i: Int) {ID(5), A_TO_Z, NEWEST, OLDEST}
 enum class Sort {ID, A_TO_Z, NEWEST, OLDEST}
+enum class SelectionOperation {PLAY_NOW, PLAY_NEXT, PLAY_LAST}

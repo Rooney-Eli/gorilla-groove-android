@@ -111,6 +111,14 @@ class PlayerControlsViewModel @ViewModelInject constructor(
             if(currentMetadata?.description?.mediaId != it.description?.mediaId) {
                 currentMetadata = it
                 sendPlayStatusToServer()
+                it.description.mediaId?.let { it1 -> Integer.parseInt(it1) }?.let {
+                    val trackInNP = repository.nowPlayingTracks.find { track -> it == track.id }
+                    val index = repository.nowPlayingTracks.indexOf(trackInNP)
+                    repository.currentIndex = index
+
+                    Log.d(TAG, "current index: ${repository.currentIndex}")
+                }
+
             }
         }
 
@@ -133,10 +141,15 @@ class PlayerControlsViewModel @ViewModelInject constructor(
             checkPlaybackPosition()
     }, POSITION_UPDATE_INTERVAL_MILLIS)
 
-    fun playMedia(track: Track, callingFragment: String) {
+    fun playMedia(track: Track, callingFragment: String, playlistId: Int?) {
 
-        repository.stagePendingTracks()
+        repository.changeMediaSource(callingFragment, playlistId)
 
+        val extras = Bundle().also { it.putString(Constants.KEY_CALLING_FRAGMENT, callingFragment) }
+        transportControls.playFromMediaId(track.id.toString(), extras)
+    }
+
+    fun playNow(track: Track, callingFragment: String, playlistId: Int?) {
         val extras = Bundle().also { it.putString(Constants.KEY_CALLING_FRAGMENT, callingFragment) }
         transportControls.playFromMediaId(track.id.toString(), extras)
     }
