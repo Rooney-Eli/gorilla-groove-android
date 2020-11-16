@@ -22,7 +22,7 @@ interface DatabaseDao {
     suspend fun  getAllTracksSortedDateAddedNewest(): List<TrackCacheEntity>
 
     @Query("SELECT * FROM tracks WHERE trackId = :trackId")
-    suspend fun getTrackById(trackId: Int) : TrackCacheEntity
+    suspend fun getTrackById(trackId: Long) : TrackCacheEntity
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -39,7 +39,7 @@ interface DatabaseDao {
     suspend fun getAllPlaylists(): List<PlaylistKeyCacheEntity>
 
     @Query("SELECT * from playlists WHERE playlistId = :playlistId")
-    suspend fun getPlaylistById(playlistId: Int): PlaylistKeyCacheEntity
+    suspend fun getPlaylistById(playlistId: Long): PlaylistKeyCacheEntity
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -54,7 +54,7 @@ interface DatabaseDao {
     suspend fun insertPlaylistReferenceData(playlistItemEntity: PlaylistItemReferenceData): Long
 
     @Query("SELECT * from playlist_items WHERE playlistId = :playlistId")
-    suspend fun getPlaylistReferenceData(playlistId: Int): List<PlaylistItemReferenceData>
+    suspend fun getPlaylistReferenceData(playlistId: Long): List<PlaylistItemReferenceData>
 
 
 

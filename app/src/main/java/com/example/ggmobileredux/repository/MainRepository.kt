@@ -54,11 +54,11 @@ class MainRepository (
 
     private var trackSorting: Sort = sharedPreferences.getString(KEY_SORT, SORT_BY_ID)?.toSort() ?: Sort.ID
 
-    private var lastVerifiedTrack: Int? = null
+    private var lastVerifiedTrack: Long? = null
     private lateinit var lastFetchedLinks: TrackLinkResponse
 
     //glorified memory for lookups
-    private val allTracks = LinkedHashMap<Int, Track>()
+    private val allTracks = LinkedHashMap<Long, Track>()
     private val allUsers = mutableListOf<User>()
     private val playlistKeys = mutableListOf<PlaylistKey>()
     private val playlists = mutableListOf<Playlist>()
@@ -84,7 +84,7 @@ class MainRepository (
     val nowPlayingConcatenatingMediaSource = ConcatenatingMediaSource(false, true, ShuffleOrder.DefaultShuffleOrder(0))
     val nowPlayingMetadataList = mutableListOf<MediaMetadataCompat>()
 
-    fun changeMediaSource(callingFragment: String, playlistId: Int?) {
+    fun changeMediaSource(callingFragment: String, playlistId: Long?) {
         when(callingFragment) {
             CALLING_FRAGMENT_LIBRARY -> {
                 dataSetChanged = true
@@ -167,7 +167,7 @@ class MainRepository (
 
 
 
-    fun setSelectedTracks(trackIds: List<Int>, selectionOperation: SelectionOperation) {
+    fun setSelectedTracks(trackIds: List<Long>, selectionOperation: SelectionOperation) {
         when(selectionOperation) {
             SelectionOperation.PLAY_NOW -> {
                 dataSetChanged = true
@@ -201,7 +201,7 @@ class MainRepository (
 
 
 
-    suspend fun getTrackLinks(id: Int) : TrackLinkResponse {
+    suspend fun getTrackLinks(id: Long) : TrackLinkResponse {
 
         if(lastVerifiedTrack == id) {
             return lastFetchedLinks
@@ -306,7 +306,8 @@ class MainRepository (
     }
     private suspend fun fetchAllTracksFromNetwork() : List<Track> {
         return try{
-             networkMapper.mapFromTrackEntityList(networkApi.get(userToken).trackList)
+            val list = networkApi.get(userToken).trackList
+             networkMapper.mapFromTrackEntityList(list)
         } catch (e: Exception){
             Log.d(TAG, "$e")
             emptyList()
@@ -412,7 +413,7 @@ class MainRepository (
         }
     }
 
-    suspend fun getPlaylist(playlistKeyId: Int): Flow<DataState<out Playlist>> = flow {
+    suspend fun getPlaylist(playlistKeyId: Long): Flow<DataState<out Playlist>> = flow {
 
         val playlist = playlists.find { plist -> plist.id == playlistKeyId  }
 
@@ -550,7 +551,7 @@ class MainRepository (
                 lateinit var fetchedUri : Uri
                 lateinit var fetchedUris: TrackLinkResponse
                 runBlocking {
-                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()))
+                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()).toLong())
                 }
 
                 fetchedUri = Uri.parse(fetchedUris.trackLink)
@@ -581,7 +582,7 @@ class MainRepository (
                 lateinit var fetchedUri : Uri
                 lateinit var fetchedUris: TrackLinkResponse
                 runBlocking {
-                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()))
+                    fetchedUris = getTrackLinks(Integer.parseInt(dataSpec.uri.toString()).toLong())
                 }
 
                 fetchedUri = Uri.parse(fetchedUris.trackLink)

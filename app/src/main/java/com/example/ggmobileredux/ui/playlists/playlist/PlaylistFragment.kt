@@ -29,11 +29,11 @@ class PlaylistFragment : Fragment(R.layout.fragment_playlist), PlaylistAdapter.O
     private val viewModel: MainViewModel by viewModels()
     private val playerControlsViewModel: PlayerControlsViewModel by viewModels()
     lateinit var playlistAdapter: PlaylistAdapter
-    var playlistKeyId: Int? = null
+    var playlistKeyId: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        playlistKeyId = arguments?.getInt("PLAYLIST_KEY_ID")
+        playlistKeyId = arguments?.getLong("PLAYLIST_KEY_ID")
     }
 
     @ExperimentalCoroutinesApi

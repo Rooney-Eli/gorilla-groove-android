@@ -108,7 +108,7 @@ class MusicNotificationManager(
         private suspend fun resolveUriAsBitmap(iconUri: Uri?): Bitmap? {
             return withContext(Dispatchers.IO) {
                 // Block on downloading artwork.
-                val links = mainRepository.getTrackLinks(Integer.parseInt(iconUri.toString()))
+                val links = mainRepository.getTrackLinks(Integer.parseInt(iconUri.toString()).toLong())
                 val artLink = links.albumArtLink
                 artLink?.let {
 

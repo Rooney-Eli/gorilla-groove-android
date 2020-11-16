@@ -81,4 +81,35 @@ class PlayingFragment : Fragment(R.layout.fragment_playing), PlaylistAdapter.OnT
         playerControlsViewModel.playPause()
     }
 
+    override fun onOptionsClick(position: Int) {
+        Log.d(TAG, "onOptionsClick: ")
+    }
+
+    override fun onPlayNextSelection(position: Int) {
+        Log.d(TAG, "onPlayNextSelection: ")
+    }
+
+    override fun onPlayLastSelection(position: Int) {
+        Log.d(TAG, "onPlayLastSelection: ")
+    }
+
+    override fun onGetLinkSelection(position: Int) {
+        Log.d(TAG, "onGetLinkSelection: ")
+    }
+
+    override fun onDownloadSelection(position: Int) {
+        Log.d(TAG, "onDownloadSelection: ")
+    }
+
+    override fun onRecommendSelection(position: Int) {
+        Log.d(TAG, "onRecommendSelection: ")
+    }
+
+    override fun onAddToPlaylistSelection(position: Int) {
+        Log.d(TAG, "onAddToPlaylistSelection: ")
+    }
+    override fun onPropertiesSelection(position: Int) {
+        Log.d(TAG, "onPropertiesSelection: ")
+    }
+
 }

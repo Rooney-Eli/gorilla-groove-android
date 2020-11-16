@@ -12,13 +12,13 @@ data class PlaylistItemReferenceData(
     //PK set to false so I can use GG backend id key
     @PrimaryKey(autoGenerate = false)
     @ColumnInfo(name = "playlistItemId") //this is the id of the backend join table and will be unique
-    var id: Int,
+    var id: Long,
 
     @ColumnInfo(name = "playlistId") //this can be used to look up the playlist table for this info
-    var playlistId: Int,
+    var playlistId: Long,
 
     @ColumnInfo(name = "trackId") // this can be used to look up the track table for this info
-    var trackId: Int,
+    var trackId: Long,
 
     @ColumnInfo(name = "createdAt")
     var createdAt: String,

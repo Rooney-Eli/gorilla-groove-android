@@ -1,7 +1,7 @@
 package com.example.ggmobileredux.network.playlist
 
 data class PlaylistKeyNetworkEntity(
-    var id: Int,
+    var id: Long,
     var name: String,
     var createdAt: String,
     var updatedAt: String

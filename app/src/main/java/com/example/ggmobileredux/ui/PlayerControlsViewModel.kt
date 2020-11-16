@@ -76,9 +76,6 @@ class PlayerControlsViewModel @ViewModelInject constructor(
 
     }
 
-
-
-
     private val playbackStateObserver = Observer<PlaybackStateCompat> {
         _playbackState.postValue(it ?: EMPTY_PLAYBACK_STATE)
 
@@ -111,7 +108,7 @@ class PlayerControlsViewModel @ViewModelInject constructor(
             if(currentMetadata?.description?.mediaId != it.description?.mediaId) {
                 currentMetadata = it
                 sendPlayStatusToServer()
-                it.description.mediaId?.let { it1 -> Integer.parseInt(it1) }?.let {
+                it.description.mediaId?.let { it1 -> Integer.parseInt(it1).toLong() }?.let {
                     val trackInNP = repository.nowPlayingTracks.find { track -> it == track.id }
                     val index = repository.nowPlayingTracks.indexOf(trackInNP)
                     repository.currentIndex = index
@@ -141,7 +138,7 @@ class PlayerControlsViewModel @ViewModelInject constructor(
             checkPlaybackPosition()
     }, POSITION_UPDATE_INTERVAL_MILLIS)
 
-    fun playMedia(track: Track, callingFragment: String, playlistId: Int?) {
+    fun playMedia(track: Track, callingFragment: String, playlistId: Long?) {
 
         repository.changeMediaSource(callingFragment, playlistId)
 

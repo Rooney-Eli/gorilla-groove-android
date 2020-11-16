@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/action_play_next"
+        android:title="Play Next"/>
+    <item android:id="@+id/action_play_last"
+        android:title="Play Last"/>
+    <item android:id="@+id/action_get_link"
+        android:title="Get Link"/>
+    <item android:id="@+id/action_download"
+    android:title="Download"/>
+    <item android:id="@+id/action_recommend"
+        android:title="Recommend To..."/>
+    <item android:id="@+id/action_add_to_playlist"
+        android:title="Add To Playlist"/>
+    <item android:id="@+id/action_properties"
+        android:title="Properties"/>
+</menu>

@@ -98,7 +98,7 @@ constructor(
     }
 
     @ExperimentalCoroutinesApi
-    fun setLibraryEvent(libraryEvent: LibraryEvent<Int>) {
+    fun setLibraryEvent(libraryEvent: LibraryEvent<Long>) {
         viewModelScope.launch {
             when (libraryEvent) {
                 is LibraryEvent.GetAllTracksEvents -> {
@@ -116,7 +116,7 @@ constructor(
     }
 
     @ExperimentalCoroutinesApi
-    fun setPlaylistsEvent(playlistsEvent: PlaylistsEvent<Int>) {
+    fun setPlaylistsEvent(playlistsEvent: PlaylistsEvent<Long>) {
         viewModelScope.launch {
             when (playlistsEvent) {
                 is PlaylistsEvent.GetAllPlaylistKeys -> {
@@ -126,7 +126,7 @@ constructor(
                         }
                         .launchIn(viewModelScope)
                 }
-                is PlaylistsEvent.GetPlaylist<Int> -> {
+                is PlaylistsEvent.GetPlaylist<Long> -> {
                     mainRepository.getPlaylist(playlistsEvent.data)
                         .onEach {
                             _playlist.postValue(it)
@@ -164,7 +164,7 @@ constructor(
     }
 
     @ExperimentalCoroutinesApi
-    fun setSelectedTracks(trackIds: List<Int>, selectionOperation: SelectionOperation) {
+    fun setSelectedTracks(trackIds: List<Long>, selectionOperation: SelectionOperation) {
         mainRepository.setSelectedTracks(trackIds, selectionOperation)
         Log.d(TAG, "setSelectedTracks: setting new tracks")
         setNowPlayingEvent(NowPlayingEvent.GetNowPlayingTracksEvent)

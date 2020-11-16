@@ -14,10 +14,10 @@ interface NetworkApi {
     suspend fun get(@Header("Authorization") token: String): TrackWrapper
 
     @GET("api/track/{id}")
-    suspend fun getTrack(@Header("Authorization") token: String, @Path("id") songId: Int ): TrackNetworkEntity
+    suspend fun getTrack(@Header("Authorization") token: String, @Path("id") songId: Long ): TrackNetworkEntity
 
     @GET("/api/file/link/{id}?artSize=SMALL")
-    suspend fun getTrackLink(@Header("Authorization") token: String, @Path("id") songId: Int): TrackLinkResponse
+    suspend fun getTrackLink(@Header("Authorization") token: String, @Path("id") songId: Long): TrackLinkResponse
 
     @POST("/api/authentication/login")
     suspend fun getAuthorization(@Body loginRequest: LoginRequest): LoginResponseNetworkEntity
@@ -31,9 +31,9 @@ interface NetworkApi {
     @GET("api/playlist/track")
     suspend fun getAllPlaylistTracks(
         @Header("Authorization") token: String,
-        @Query("playlistId") playlistId: Int,
+        @Query("playlistId") playlistId: Long,
         @Query("sort") sort: String,
-        @Query("size") size: Int
+        @Query("size") size: Long
     ): PlaylistNetworkEntity
 
 }

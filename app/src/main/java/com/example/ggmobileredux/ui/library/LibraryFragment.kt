@@ -8,11 +8,13 @@ import android.view.MenuItem.SHOW_AS_ACTION_ALWAYS
 import android.view.MenuItem.SHOW_AS_ACTION_NEVER
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
@@ -144,11 +146,6 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                 viewModel.sortTracks(Sort.NEWEST)
                 true
             }
-
-            R.id.action_logout -> {
-
-                true
-            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -190,6 +187,42 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
         playlistAdapter.isPlaying = playerControlsViewModel.playPause()
         playlistAdapter.notifyDataSetChanged()
     }
+
+    override fun onOptionsClick(position: Int) {
+        Log.d(TAG, "onOptionsClick: ")
+    }
+
+    override fun onPlayNextSelection(position: Int) {
+        Log.d(TAG, "onPlayNextSelection: ")
+    }
+
+    override fun onPlayLastSelection(position: Int) {
+        Log.d(TAG, "onPlayLastSelection: ")
+    }
+
+    override fun onGetLinkSelection(position: Int) {
+        Log.d(TAG, "onGetLinkSelection: ")
+    }
+
+    override fun onDownloadSelection(position: Int) {
+        Log.d(TAG, "onDownloadSelection: ")
+    }
+
+    override fun onRecommendSelection(position: Int) {
+        Log.d(TAG, "onRecommendSelection: ")
+    }
+
+    override fun onAddToPlaylistSelection(position: Int) {
+        Log.d(TAG, "onAddToPlaylistSelection: ")
+    }
+
+    override fun onPropertiesSelection(position: Int) {
+        Log.d(TAG, "onPropertiesSelection: ")
+        findNavController().navigate(
+            R.id.action_mainFragment_to_trackPropertiesFragment
+        )
+    }
+
 
 
     @ExperimentalCoroutinesApi

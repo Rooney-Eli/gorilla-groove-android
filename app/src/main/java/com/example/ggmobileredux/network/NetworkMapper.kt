@@ -19,12 +19,29 @@ constructor() {
         return Track(
             id = entity.id,
             name = entity.name,
-            album = entity.album,
             artist = entity.artist,
-            trackLink = entity.trackLink,
-            albumArtLink = entity.albumArtLink,
+            featuring = entity.featuring,
+            album = entity.album,
+            trackNumber = entity.trackNumber,
+            filename = entity.filename,
+            bitRate = entity.bitRate,
+            sampleRate = entity.sampleRate,
             length = entity.length,
-            addedToLibrary = entity.addedToLibrary
+            releaseYear = entity.releaseYear,
+            genre = entity.genre,
+            playCount = entity.playCount,
+            pri = entity.pri,
+            hidden = entity.hidden,
+            lastPlayed = entity.lastPlayed,
+            createdAt = entity.createdAt,
+            addedToLibrary = entity.addedToLibrary,
+            note = entity.note,
+            inReview = entity.inReview,
+            hasArt = entity.hasArt,
+            songUpdatedAt = entity.songUpdatedAt,
+            artUpdatedAt = entity.artUpdatedAt,
+            trackLink = entity.trackLink,
+            albumArtLink = entity.albumArtLink
         )
     }
 
@@ -32,12 +49,29 @@ constructor() {
         return TrackNetworkEntity(
             id = domainModel.id,
             name = domainModel.name,
-            album = domainModel.album,
             artist = domainModel.artist,
-            trackLink = domainModel.trackLink,
-            albumArtLink = domainModel.albumArtLink,
+            featuring = domainModel.featuring,
+            album = domainModel.album,
+            trackNumber = domainModel.trackNumber,
+            filename = domainModel.filename,
+            bitRate = domainModel.bitRate,
+            sampleRate = domainModel.sampleRate,
             length = domainModel.length,
-            addedToLibrary = domainModel.addedToLibrary
+            releaseYear = domainModel.releaseYear,
+            genre = domainModel.genre,
+            playCount = domainModel.playCount,
+            pri = domainModel.pri,
+            hidden = domainModel.hidden,
+            lastPlayed = domainModel.lastPlayed,
+            createdAt = domainModel.createdAt,
+            addedToLibrary = domainModel.addedToLibrary,
+            note = domainModel.note,
+            inReview = domainModel.inReview,
+            hasArt = domainModel.hasArt,
+            songUpdatedAt = domainModel.songUpdatedAt,
+            artUpdatedAt = domainModel.artUpdatedAt,
+            trackLink = domainModel.trackLink,
+            albumArtLink = domainModel.albumArtLink
         )
     }
 

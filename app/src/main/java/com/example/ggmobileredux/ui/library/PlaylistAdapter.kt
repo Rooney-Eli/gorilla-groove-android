@@ -2,19 +2,23 @@ package com.example.ggmobileredux.ui.library
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Rect
 import android.util.TypedValue
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.*
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
+import androidx.appcompat.widget.PopupMenu
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ggmobileredux.R
 import com.example.ggmobileredux.model.Track
 import kotlinx.android.synthetic.main.playlist_track_info_item.view.*
+import kotlinx.android.synthetic.main.playlist_track_info_item.view.checkbox
+import kotlinx.android.synthetic.main.playlist_track_info_item.view.playStatusButton
 import kotlinx.android.synthetic.main.playlist_track_name_item.view.track_name
+import kotlinx.android.synthetic.main.track_expandable_item.view.*
 import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.collections.LinkedHashMap
@@ -28,7 +32,7 @@ class PlaylistAdapter(
     var playingTrackId: String? = null
     var isPlaying = false
 
-    val checkedTracks = LinkedHashMap<Int, Boolean>()
+    val checkedTracks = LinkedHashMap<Long, Boolean>()
 
     var showingCheckBox = false
 
@@ -40,12 +44,8 @@ class PlaylistAdapter(
 
     }
 
-//    fun setNowPlayingTrack(track: Track) {
-//        playingTrack = track
-//    }
-
-    fun getSelectedTracks(): List<Int> {
-        val tracks = mutableListOf<Int>()
+    fun getSelectedTracks(): List<Long> {
+        val tracks = mutableListOf<Long>()
         for (id in checkedTracks.keys)
         {
             if(checkedTracks.getValue(id)) {
@@ -68,7 +68,7 @@ class PlaylistAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(
-            R.layout.playlist_track_info_item, parent, false
+            R.layout.track_expandable_item, parent, false
         )
         return PlaylistViewHolder(itemView)
     }
@@ -78,7 +78,6 @@ class PlaylistAdapter(
     override fun onBindViewHolder(holder: PlaylistViewHolder, position: Int) {
         val currentTrack = filteredList[position]
         holder.tvArtist.text = currentTrack.artist
-        holder.tvDuration.text = currentTrack.length.getSongTimeFromSeconds()
         holder.tvName.text = currentTrack.name
         holder.tvAlbum.text = currentTrack.album
 
@@ -107,6 +106,7 @@ class PlaylistAdapter(
 
 
         holder.checkbox.isVisible = showingCheckBox
+        holder.options.isVisible = !showingCheckBox
         holder.checkbox.isChecked = checkedTracks[filteredList[position].id] ?: false
         holder.checkbox.setOnCheckedChangeListener { buttonView, isChecked ->
             if(buttonView.isShown) {
@@ -114,6 +114,8 @@ class PlaylistAdapter(
                 checkedTracks[filteredList[position].id] = isChecked
             }
         }
+
+
     }
 
 
@@ -124,12 +126,13 @@ class PlaylistAdapter(
     }
 
     inner class PlaylistViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
-        val tvArtist: TextView = itemView.track_artist
-        val tvDuration: TextView = itemView.track_duration
-        val tvName: TextView = itemView.track_name
-        val tvAlbum: TextView = itemView.track_album
+        val tvArtist: TextView = itemView.tv_artist
+        val tvName: TextView = itemView.tv_title
+        val tvAlbum: TextView = itemView.tv_album
         val imageButton: ImageButton = itemView.playStatusButton
         val checkbox: CheckBox = itemView.checkbox
+        val options: TextView = itemView.tv_options
+        val menu_button_parent: ConstraintLayout = itemView.menu_button_layout
 
         init {
             itemView.setOnClickListener(this)
@@ -140,6 +143,49 @@ class PlaylistAdapter(
                     listener.onPlayPauseClick(position)
                 }
             }
+            options.setOnClickListener {
+                val position = adapterPosition
+                val popup = PopupMenu(itemView.context, it)
+                popup.inflate(R.menu.track_floating_menu)
+                popup.setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        R.id.action_play_next -> {
+                            listener.onPlayNextSelection(position)
+                            true
+                        }
+                        R.id.action_play_last -> {
+                            listener.onPlayLastSelection(position)
+                            true
+                        }
+                        R.id.action_get_link -> {
+                            listener.onGetLinkSelection(position)
+                            true
+                        }
+                        R.id.action_download -> {
+                            listener.onDownloadSelection(position)
+                            true
+                        }
+                        R.id.action_recommend -> {
+                            listener.onRecommendSelection(position)
+                            true
+                        }
+                        R.id.action_add_to_playlist -> {
+                            listener.onAddToPlaylistSelection(position)
+                            true
+                        }
+                        R.id.action_properties -> {
+                            listener.onPropertiesSelection(position)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                popup.show()
+            }
+
+            expandViewHitArea(menu_button_parent, options)
+
         }
 
 
@@ -163,6 +209,23 @@ class PlaylistAdapter(
             return true
         }
 
+        private fun expandViewHitArea(parent : View, child : View) {
+
+            parent.post {
+
+                val parentRect = Rect()
+                val childRect = Rect()
+                parent.getHitRect(parentRect)
+                child.getHitRect(childRect)
+
+                childRect.left = 0
+                childRect.top = 0
+                childRect.right = parentRect.width()
+                childRect.bottom = parentRect.height()
+
+                parent.touchDelegate = TouchDelegate(childRect, child)
+            }
+        }
 
 
     }
@@ -198,5 +261,25 @@ class PlaylistAdapter(
         fun onTrackClick(position: Int)
         fun onTrackLongClick(position: Int) : Boolean
         fun onPlayPauseClick(position: Int)
+        fun onOptionsClick(position: Int)
+
+        fun onPlayNextSelection(position: Int)
+        fun onPlayLastSelection(position: Int)
+        fun onGetLinkSelection(position: Int)
+        fun onDownloadSelection(position: Int)
+        fun onRecommendSelection(position: Int)
+        fun onAddToPlaylistSelection(position: Int)
+        fun onPropertiesSelection(position: Int)
     }
+
+//    interface OnOptionsMenuListener {
+//        fun onPlayNextSelection(position: Int)
+//        fun onPlayLastSelection(position: Int)
+//        fun onGetLinkSelection(position: Int)
+//        fun onDownloadSelection(position: Int)
+//        fun onRecommendSelection(position: Int)
+//        fun onAddToPlaylistSelection(position: Int)
+//    }
+
+
 }

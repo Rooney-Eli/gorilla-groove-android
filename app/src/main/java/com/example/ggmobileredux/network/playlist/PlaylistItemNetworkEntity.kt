@@ -4,7 +4,7 @@ import com.example.ggmobileredux.network.track.TrackNetworkEntity
 
 
 data class PlaylistItemNetworkEntity(
-    var id: Int,
+    var id: Long,
     var track: TrackNetworkEntity,
     var createdAt: String,
     var updatedAt: String

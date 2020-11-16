@@ -1,7 +1,7 @@
 package com.example.ggmobileredux.network
 
 data class UserNetworkEntity(
-    var id: Int,
+    var id: Long,
     var username: String,
     var email: String
 )

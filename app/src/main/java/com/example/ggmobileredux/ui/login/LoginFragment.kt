@@ -52,7 +52,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
             )
         }
 
-
         edit_text_email.requestFocus()
 
         button_login.setOnClickListener {
@@ -65,8 +64,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     "",
                     "ANDROID"
                 )
-
-
             viewModel.setLoginStateEvent(LoginStateEvent.LoginEvent(loginRequest))
 
         }
