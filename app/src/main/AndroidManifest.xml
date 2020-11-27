@@ -16,7 +16,7 @@
 
         <activity
             android:name="com.example.ggmobileredux.ui.MainActivity"
-            android:windowSoftInputMode="adjustNothing">
+            android:windowSoftInputMode="adjustResize|stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

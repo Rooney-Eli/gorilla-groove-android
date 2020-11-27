@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.bumptech.glide.RequestManager
 import com.example.ggmobileredux.R
@@ -45,7 +46,7 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
 
-
+       // setupActionBarWithNavController(navController)
         bottomNavigationView.setupWithNavController(navController)
 
         navHostFragment.findNavController()
@@ -87,7 +88,7 @@ class MainActivity : AppCompatActivity() {
                         title_tv.text = "Settings"
                     }
                     R.id.trackPropertiesFragment -> {
-                        bottomNavigationView.visibility = View.VISIBLE
+                        bottomNavigationView.visibility = View.GONE
                         playerControlView.visibility = View.GONE
                         title_tv.text = "Properties"
                     }

@@ -24,6 +24,9 @@ interface DatabaseDao {
     @Query("SELECT * FROM tracks WHERE trackId = :trackId")
     suspend fun getTrackById(trackId: Long) : TrackCacheEntity
 
+    @Update
+    suspend fun updateTrack(track: TrackCacheEntity)
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(userEntity: UserCacheEntity): Long

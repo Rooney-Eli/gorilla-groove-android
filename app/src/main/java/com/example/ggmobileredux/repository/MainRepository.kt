@@ -11,6 +11,7 @@ import com.example.ggmobileredux.database.DatabaseDao
 import com.example.ggmobileredux.model.*
 import com.example.ggmobileredux.network.login.LoginRequest
 import com.example.ggmobileredux.network.track.TrackLinkResponse
+import com.example.ggmobileredux.network.track.TrackUpdate
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.example.ggmobileredux.util.Constants.CALLING_FRAGMENT_PLAYLIST
 import com.example.ggmobileredux.util.Constants.KEY_FIRST_TIME_TOGGLE
@@ -93,6 +94,7 @@ class MainRepository (
                 nowPlayingMetadataList.clear()
 
                 nowPlayingTracks.addAll(allTracks.values.toList())
+                nowPlayingTracks.sort(trackSorting)
                 nowPlayingTracks.map {
                     nowPlayingConcatenatingMediaSource.addCustomMediaSource(it)
                     nowPlayingMetadataList.add(it.toMediaMetadataItem())
@@ -238,6 +240,11 @@ class MainRepository (
     suspend fun getNowPlayingTracks(): Flow<DataState<out List<Track>>> = flow {
         emit(DataState(nowPlayingTracks, StateEvent.Success))
     }
+
+    fun getTrack(trackId: Long): Flow<DataState<out Track>> = flow {
+        emit(DataState(allTracks[trackId], StateEvent.Success))
+    }
+
 
     suspend fun getAllTracks(): Flow<DataState<out List<Track>>> = flow {
 
@@ -498,6 +505,23 @@ class MainRepository (
 
     }
 
+    suspend fun updateTrack(trackUpdate: TrackUpdate) : Flow<DataState<*>> = flow {
+        emit(DataState(null, StateEvent.Loading))
+        try {
+
+            networkApi.updateTrack(userToken, trackUpdate)
+            val updatedTrack = networkMapper.mapFromTrackEntity(networkApi.getTrack(userToken, trackUpdate.trackIds[0]))
+            val oldTrack = allTracks[updatedTrack.id]
+            allTracks[updatedTrack.id] = updatedTrack
+            allLibraryTracks[allLibraryTracks.indexOf(oldTrack)] = updatedTrack
+            databaseDao.updateTrack(cacheMapper.mapToTrackEntity(updatedTrack))
+
+            emit(DataState(null, StateEvent.Success))
+        } catch(e: Exception) {
+            emit(DataState(null, StateEvent.Error))
+        }
+    }
+
     suspend fun getToken(loginRequest: LoginRequest): Flow<SessionState<*>> = flow {
         emit(SessionState(null, StateEvent.Loading))
         try {
@@ -606,6 +630,15 @@ class MainRepository (
             Sort.A_TO_Z -> allLibraryTracks.sortBy { it.name }
             Sort.NEWEST -> allLibraryTracks.sortByDescending { it.addedToLibrary }
             Sort.OLDEST -> allLibraryTracks.sortBy { it.addedToLibrary }
+        }
+    }
+
+    fun MutableList<Track>.sort(sorting: Sort) {
+        when(sorting) {
+            Sort.ID -> this.sortBy { it.id }
+            Sort.A_TO_Z -> this.sortBy { it.name }
+            Sort.NEWEST -> this.sortByDescending { it.addedToLibrary }
+            Sort.OLDEST -> this.sortBy { it.addedToLibrary }
         }
     }
 

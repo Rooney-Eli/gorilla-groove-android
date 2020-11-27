@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
+import androidx.room.Update
 import com.example.ggmobileredux.model.Playlist
 import com.example.ggmobileredux.model.PlaylistKey
 import com.example.ggmobileredux.model.Track
@@ -11,6 +12,7 @@ import com.example.ggmobileredux.model.User
 import com.example.ggmobileredux.repository.MainRepository
 import com.example.ggmobileredux.repository.Sort
 import com.example.ggmobileredux.network.login.LoginRequest
+import com.example.ggmobileredux.network.track.TrackUpdate
 import com.example.ggmobileredux.repository.SelectionOperation
 import com.example.ggmobileredux.util.DataState
 import com.example.ggmobileredux.util.SessionState
@@ -32,6 +34,15 @@ constructor(
     private val _loginState: MutableLiveData<SessionState<*>> = MutableLiveData()
     val loginState: LiveData<SessionState<*>>
         get() = _loginState
+
+
+    private val _updateStatus: MutableLiveData<DataState<*>> = MutableLiveData()
+    val updateStatus: LiveData<DataState<*>>
+        get() = _updateStatus
+
+    private val _selectedTrack: MutableLiveData<DataState<out Track>> = MutableLiveData()
+    val selectedTrack: LiveData<DataState<out Track>>
+        get() = _selectedTrack
 
     private val _libraryTracks: MutableLiveData<DataState<out List<Track>>> = MutableLiveData()
     val libraryTracks: LiveData<DataState<out List<Track>>>
@@ -108,6 +119,14 @@ constructor(
                         }
                         .launchIn(viewModelScope)
                 }
+                is LibraryEvent.GetTrack<Long> -> {
+                    mainRepository.getTrack(libraryEvent.data)
+                        .onEach {
+                            _selectedTrack.postValue(it)
+                        }
+                        .launchIn(viewModelScope)
+                }
+
                 is LibraryEvent.None -> {
                     //ignored
                 }
@@ -158,6 +177,22 @@ constructor(
         }
     }
 
+    @ExperimentalCoroutinesApi
+    fun setUpdateEvent(updateEvent: UpdateEvent<TrackUpdate>) {
+        viewModelScope.launch {
+            when (updateEvent) {
+                is UpdateEvent.UpdateTrack<TrackUpdate> -> {
+                    mainRepository.updateTrack(updateEvent.data)
+                        .onEach {
+                            _updateStatus.postValue(it)
+                        }
+                        .launchIn(viewModelScope)
+                }
+
+            }
+        }
+    }
+
     fun sortTracks(sorting: Sort) {
         mainRepository.sortLibrary(sorting)
         _libraryTracks.postValue(DataState(mainRepository.allLibraryTracks, StateEvent.Success))
@@ -179,6 +214,7 @@ sealed class LoginStateEvent<out R> {
 }
 
 sealed class LibraryEvent<out R> {
+    data class GetTrack<out T>(val data: T): LibraryEvent<T>()
     object GetAllTracksEvents: LibraryEvent<Nothing>()
     object None: LibraryEvent<Nothing>()
 }
@@ -197,4 +233,8 @@ sealed class PlaylistsEvent<out R> {
     object GetAllPlaylistKeys: PlaylistsEvent<Nothing>()
     data class GetPlaylist<out T>(val data: T): PlaylistsEvent<T>()
     object None: PlaylistsEvent<Nothing>()
+}
+
+sealed class UpdateEvent<out R> {
+    data class UpdateTrack<out T>(val data: T): UpdateEvent<T>()
 }

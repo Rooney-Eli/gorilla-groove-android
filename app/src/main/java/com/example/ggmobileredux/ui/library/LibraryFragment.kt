@@ -10,6 +10,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
+import androidx.core.os.bundleOf
 import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -218,8 +219,13 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
 
     override fun onPropertiesSelection(position: Int) {
         Log.d(TAG, "onPropertiesSelection: ")
+
+        val track = playlistAdapter.filteredList[position]
+        val bundle = bundleOf("KEY_TRACK_ID" to track.id)
+
         findNavController().navigate(
-            R.id.action_mainFragment_to_trackPropertiesFragment
+            R.id.action_mainFragment_to_trackPropertiesFragment,
+            bundle
         )
     }
 

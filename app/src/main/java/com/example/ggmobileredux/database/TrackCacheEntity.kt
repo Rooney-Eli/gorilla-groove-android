@@ -30,7 +30,7 @@ data class TrackCacheEntity(
     var addedToLibrary: String?,
 
     @ColumnInfo(name = "trackNumber")
-    var trackNumber: Long?,
+    var trackNumber: Int?,
 
     @ColumnInfo(name = "filename")
     var filename: String? = "",
@@ -42,7 +42,7 @@ data class TrackCacheEntity(
     var sampleRate: Long,
 
     @ColumnInfo(name = "releaseYear")
-    var releaseYear: String? = "",
+    var releaseYear: Int?,
 
     @ColumnInfo(name = "genre")
     var genre: String? = "",
