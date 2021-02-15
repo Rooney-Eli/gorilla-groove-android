@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">GGMobileRedux</string>
+    <string name="app_name">Gorilla Groove</string>
     <string name="notification_channel_name">Music Channel</string>
     <string name="notification_channel_description">Shows the currently playing music</string>
     <!-- Error messages -->

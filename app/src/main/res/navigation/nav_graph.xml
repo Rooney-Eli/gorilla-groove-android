@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.example.ggmobileredux.ui.login.LoginFragment"
+        android:name="com.gorilla.gorillagroove.ui.login.LoginFragment"
         android:label="LoginFragment" >
         <action
             android:id="@+id/action_loginFragment_to_mainFragment"
@@ -14,7 +14,7 @@
     </fragment>
     <fragment
         android:id="@+id/mainFragment"
-        android:name="com.example.ggmobileredux.ui.library.LibraryFragment"
+        android:name="com.gorilla.gorillagroove.ui.library.LibraryFragment"
         android:label="MainFragment" >
         <action
             android:id="@+id/action_mainFragment_to_loginFragment"
@@ -37,7 +37,7 @@
     </fragment>
     <fragment
         android:id="@+id/playingFragment"
-        android:name="com.example.ggmobileredux.ui.playing.PlayingFragment"
+        android:name="com.gorilla.gorillagroove.ui.playing.PlayingFragment"
         android:label="PlayingFragment" >
         <action
             android:id="@+id/action_playingFragment_to_mainFragment"
@@ -45,7 +45,7 @@
     </fragment>
     <fragment
         android:id="@+id/playlistsFragment"
-        android:name="com.example.ggmobileredux.ui.playlists.PlaylistsFragment"
+        android:name="com.gorilla.gorillagroove.ui.playlists.PlaylistsFragment"
         android:label="PlaylistsFragment" >
         <action
             android:id="@+id/action_playlistsFragment_to_mainFragment"
@@ -56,7 +56,7 @@
     </fragment>
     <fragment
         android:id="@+id/settingsFragment"
-        android:name="com.example.ggmobileredux.ui.settings.SettingsFragment"
+        android:name="com.gorilla.gorillagroove.ui.settings.SettingsFragment"
         android:label="SettingsFragment" >
         <action
             android:id="@+id/action_settingsFragment_to_mainFragment"
@@ -67,7 +67,7 @@
     </fragment>
     <fragment
         android:id="@+id/usersFragment"
-        android:name="com.example.ggmobileredux.ui.users.UsersFragment"
+        android:name="com.gorilla.gorillagroove.ui.users.UsersFragment"
         android:label="UsersFragment" >
         <action
             android:id="@+id/action_usersFragment_to_mainFragment"
@@ -75,7 +75,7 @@
     </fragment>
     <fragment
         android:id="@+id/playlistFragment"
-        android:name="com.example.ggmobileredux.ui.playlists.playlist.PlaylistFragment"
+        android:name="com.gorilla.gorillagroove.ui.playlists.playlist.PlaylistFragment"
         android:label="PlaylistFragment" >
 
         <argument
@@ -87,7 +87,7 @@
     </fragment>
     <fragment
         android:id="@+id/trackPropertiesFragment"
-        android:name="com.example.ggmobileredux.ui.TrackPropertiesFragment"
+        android:name="com.gorilla.gorillagroove.ui.TrackPropertiesFragment"
         android:label="TrackPropertiesFragment" >
         <action
             android:id="@+id/action_trackPropertiesFragment_to_mainFragment"

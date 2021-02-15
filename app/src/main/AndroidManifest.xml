@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.ggmobileredux">
+    package="com.gorilla.gorillagroove">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
-       android:name="com.example.ggmobileredux.GGApplication"
+       android:name="com.gorilla.gorillagroove.GGApplication"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/logo"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
         <activity
-            android:name="com.example.ggmobileredux.ui.MainActivity"
+            android:name="com.gorilla.gorillagroove.ui.MainActivity"
             android:windowSoftInputMode="adjustResize|stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,7 +23,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="com.example.ggmobileredux.service.MusicService">
+        <service android:name="com.gorilla.gorillagroove.service.MusicService">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBroserService"/>
             </intent-filter>
