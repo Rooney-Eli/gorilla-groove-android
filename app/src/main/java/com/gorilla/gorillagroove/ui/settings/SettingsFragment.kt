@@ -8,6 +8,7 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.gorilla.gorillagroove.R
+import com.gorilla.gorillagroove.ui.LibraryEvent
 import com.gorilla.gorillagroove.ui.MainViewModel
 import com.gorilla.gorillagroove.ui.PlayerControlsViewModel
 import com.gorilla.gorillagroove.util.Constants
@@ -50,5 +51,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 navOptions
             )
         }
+
+        update_tracks_button.setOnClickListener {
+            viewModel.setLibraryEvent(LibraryEvent.UpdateAllTracks)
+        }
+
     }
 }

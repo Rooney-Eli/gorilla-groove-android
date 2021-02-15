@@ -17,6 +17,7 @@ object Constants {
     const val KEY_SORT = "KEY_SORT"
     const val SORT_BY_AZ = "SORT_BY_AZ"
     const val SORT_BY_ID = "SORT_BY_ID"
+    const val SORT_BY_ARTIST_AZ = "SORT_BY_ARTIST_AZ"
     const val SORT_BY_DATE_ADDED_OLDEST = "SORT_BY_DATE_ADDED_OLDEST"
     const val SORT_BY_DATE_ADDED_NEWEST = "SORT_BY_DATE_ADDED_NEWEST"
 

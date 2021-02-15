@@ -25,6 +25,7 @@ import com.gorilla.gorillagroove.ui.PlayerControlsViewModel
 import com.gorilla.gorillagroove.ui.isPlaying
 import com.gorilla.gorillagroove.util.Constants.CALLING_FRAGMENT_LIBRARY
 import com.gorilla.gorillagroove.util.Constants.KEY_SORT
+import com.gorilla.gorillagroove.util.Constants.SORT_BY_ARTIST_AZ
 import com.gorilla.gorillagroove.util.Constants.SORT_BY_AZ
 import com.gorilla.gorillagroove.util.Constants.SORT_BY_DATE_ADDED_NEWEST
 import com.gorilla.gorillagroove.util.Constants.SORT_BY_DATE_ADDED_OLDEST
@@ -143,6 +144,18 @@ class LibraryFragment : Fragment(R.layout.fragment_main),  PlaylistAdapter.OnTra
                     .putString(KEY_SORT, SORT_BY_DATE_ADDED_NEWEST)
                     .apply()
                 viewModel.sortTracks(Sort.NEWEST)
+                true
+            }
+            R.id.action_sort_artist_az -> {
+                sharedPref.edit()
+                    .putString(KEY_SORT, SORT_BY_ARTIST_AZ)
+                    .apply()
+                viewModel.sortTracks(Sort.ARTIST_A_TO_Z)
+                true
+            }
+
+            R.id.action_update_tracks -> {
+                viewModel.setLibraryEvent(LibraryEvent.UpdateAllTracks)
                 true
             }
             else -> super.onOptionsItemSelected(item)

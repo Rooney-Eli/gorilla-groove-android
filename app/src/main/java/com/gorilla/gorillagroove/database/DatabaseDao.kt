@@ -41,6 +41,10 @@ interface DatabaseDao {
     @Query("SELECT * from playlists")
     suspend fun getAllPlaylists(): List<PlaylistKeyCacheEntity>
 
+    @Query("DELETE FROM playlists")
+    suspend fun deleteAllPlaylists()
+
+
     @Query("SELECT * from playlists WHERE playlistId = :playlistId")
     suspend fun getPlaylistById(playlistId: Long): PlaylistKeyCacheEntity
 
@@ -59,6 +63,8 @@ interface DatabaseDao {
     @Query("SELECT * from playlist_items WHERE playlistId = :playlistId")
     suspend fun getPlaylistReferenceData(playlistId: Long): List<PlaylistItemReferenceData>
 
+    @Query("DELETE FROM playlist_items")
+    suspend fun deleteAllPlaylistData()
 
 
 

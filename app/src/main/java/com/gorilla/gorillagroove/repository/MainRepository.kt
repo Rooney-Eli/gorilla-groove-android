@@ -30,6 +30,7 @@ import com.google.android.exoplayer2.source.ShuffleOrder
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.ResolvingDataSource
+import com.gorilla.gorillagroove.util.Constants.SORT_BY_ARTIST_AZ
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -244,6 +245,18 @@ class MainRepository (
         emit(DataState(allTracks[trackId], StateEvent.Success))
     }
 
+    suspend fun updateAllTracks(): Flow<DataState<out List<Track>>> = flow {
+        val remoteCollection = fetchAllTracksFromNetwork()
+        val diff = remoteCollection.filterNot { allLibraryTracks.contains(it) }
+        diff.map {
+            databaseDao.insertTrack(cacheMapper.mapToTrackEntity(it))
+            allTracks[it.id] = it
+            allLibraryTracks.add(it)
+        }
+        sortLibrary(trackSorting)
+        readyLibrarySources(allLibraryTracks)
+        emit(DataState(allLibraryTracks, StateEvent.Success))
+    }
 
     suspend fun getAllTracks(): Flow<DataState<out List<Track>>> = flow {
 
@@ -371,6 +384,26 @@ class MainRepository (
         }
     }
 
+
+
+    suspend fun updateAllPlaylists(): Flow<DataState<out List<PlaylistKey>>> = flow {
+        val remoteCollection = fetchAllPlaylistKeysFromNetwork()
+        if(!remoteCollection.isNullOrEmpty()) {
+            playlistKeys.clear()
+            playlists.clear()
+            databaseDao.deleteAllPlaylistData()
+            databaseDao.deleteAllPlaylists()
+            remoteCollection.map {
+                databaseDao.insertPlaylistKey(cacheMapper.mapToPlaylistKeyEntity(it))
+                playlistKeys.add(it)
+            }
+
+            emit(DataState(playlistKeys, StateEvent.Success))
+            return@flow
+        }
+        emit(DataState(null, StateEvent.Error))
+    }
+
     suspend fun getAllPlaylistKeys(): Flow<DataState<out List<PlaylistKey>>> = flow {
 
         if(!playlistKeys.isNullOrEmpty()){
@@ -396,6 +429,7 @@ class MainRepository (
         val remoteCollection = fetchAllPlaylistKeysFromNetwork()
         if(!remoteCollection.isNullOrEmpty()) {
             playlistKeys.clear()
+            playlists.clear()
             remoteCollection.map {
                 databaseDao.insertPlaylistKey(cacheMapper.mapToPlaylistKeyEntity(it))
                 playlistKeys.add(it)
@@ -629,6 +663,7 @@ class MainRepository (
             Sort.A_TO_Z -> allLibraryTracks.sortBy { it.name }
             Sort.NEWEST -> allLibraryTracks.sortByDescending { it.addedToLibrary }
             Sort.OLDEST -> allLibraryTracks.sortBy { it.addedToLibrary }
+            Sort.ARTIST_A_TO_Z -> allLibraryTracks.sortBy { it.artist }
         }
     }
 
@@ -671,6 +706,7 @@ private fun String.toSort() : Sort {
         SORT_BY_AZ -> Sort.A_TO_Z
         SORT_BY_DATE_ADDED_NEWEST -> Sort.NEWEST
         SORT_BY_DATE_ADDED_OLDEST -> Sort.OLDEST
+        SORT_BY_ARTIST_AZ -> Sort.ARTIST_A_TO_Z
         else -> Sort.ID
     }
 }
@@ -678,5 +714,5 @@ private fun String.toSort() : Sort {
 
 
 //enum class Sort(i: Int) {ID(5), A_TO_Z, NEWEST, OLDEST}
-enum class Sort {ID, A_TO_Z, NEWEST, OLDEST}
+enum class Sort {ID, A_TO_Z, NEWEST, OLDEST, ARTIST_A_TO_Z }
 enum class SelectionOperation {PLAY_NOW, PLAY_NEXT, PLAY_LAST}

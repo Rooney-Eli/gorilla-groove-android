@@ -62,6 +62,8 @@ constructor(
     val playlist: LiveData<DataState<out Playlist>>
         get() = _playlist
 
+
+
 //    fun getNowPlayingTracks() {
 //        _nowPlayingTracks.postValue(mainRepository.playingTracks)
 //    }
@@ -125,6 +127,15 @@ constructor(
                         .launchIn(viewModelScope)
                 }
 
+                is LibraryEvent.UpdateAllTracks -> {
+                    mainRepository.updateAllTracks()
+                        .onEach {
+                            _libraryTracks.postValue(it)
+                            //_libraryTracks.postValue(DataState(mainRepository.allLibraryTracks, StateEvent.Success))
+                        }
+                        .launchIn(viewModelScope)
+                }
+
                 is LibraryEvent.None -> {
                     //ignored
                 }
@@ -150,6 +161,15 @@ constructor(
                         }
                         .launchIn(viewModelScope)
                 }
+                is PlaylistsEvent.UpdateAllPlaylists -> {
+                    mainRepository.updateAllPlaylists()
+                        .onEach {
+                            _playlistKeys.postValue(it)
+                        }
+                        .launchIn(viewModelScope)
+                }
+
+
                 is PlaylistsEvent.None -> {
                     //ignored
                 }
@@ -214,6 +234,7 @@ sealed class LoginStateEvent<out R> {
 sealed class LibraryEvent<out R> {
     data class GetTrack<out T>(val data: T): LibraryEvent<T>()
     object GetAllTracksEvents: LibraryEvent<Nothing>()
+    object UpdateAllTracks: LibraryEvent<Nothing>()
     object None: LibraryEvent<Nothing>()
 }
 
@@ -229,7 +250,9 @@ sealed class UsersEvent<Nothing> {
 
 sealed class PlaylistsEvent<out R> {
     object GetAllPlaylistKeys: PlaylistsEvent<Nothing>()
+    object UpdateAllPlaylists: PlaylistsEvent<Nothing>()
     data class GetPlaylist<out T>(val data: T): PlaylistsEvent<T>()
+
     object None: PlaylistsEvent<Nothing>()
 }
 
